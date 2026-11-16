@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pressure War Room</title>
+<meta name="description" content="Who delivers when the match is on the line: an independent SupeRR Selector Season 2 entry, built only from the supplied data pack.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Cinzel:wght@600;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: navy top bar, one hero strip with headline numbers, then a two-column war room (leaderboard | player file), then evidence. */
+:root {
+  --bg: #FFFFFF; --surface: #F7F6FB; --line: #E6E4F0; --ink: #14163A; --muted: #5C5F80; --head: #31136C;
+  --bar: #14163A; --bar-ink: #F7F6FB;
+  --pink: #E60693; --pink-deep: #950460; --pink-soft: #FCE7F3; --blue: #2F5BD0; --gold: #A8891F; --grey: #9A9AB0; --dim: #C9C8D8;
+  --display: "Cinzel", "Trajan Pro", Georgia, serif;
+  --body: "Inter", "Segoe UI", system-ui, sans-serif;
+  --num: "Barlow Condensed", "Arial Narrow", "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #14163A; --surface: #1E2150; --line: #2E3268; --ink: #F7F6FB; --muted: #B4B6D4; --head: #F7F6FB;
+  --bar: #0D0F2B; --bar-ink: #F7F6FB;
+  --pink: #E8409C; --pink-deep: #FF8AC6; --pink-soft: #3A1840; --blue: #4D72E0; --gold: #D9B84A; --grey: #8D8FB0; --dim: #3B3F75; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #14163A; --surface: #1E2150; --line: #2E3268; --ink: #F7F6FB; --muted: #B4B6D4; --head: #F7F6FB;
+  --bar: #0D0F2B; --bar-ink: #F7F6FB;
+  --pink: #E8409C; --pink-deep: #FF8AC6; --pink-soft: #3A1840; --blue: #4D72E0; --gold: #D9B84A; --grey: #8D8FB0; --dim: #3B3F75; color-scheme: dark }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+a { color: var(--pink-deep); }
+:focus-visible { outline: 2px solid var(--pink); outline-offset: 2px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 1.25rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--head); }
+.label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--pink-deep); }
+.muted { color: var(--muted); }
+.num { font-family: var(--num); font-variant-numeric: tabular-nums; }
+
+/* top bar */
+header.top { background: var(--bar); color: var(--bar-ink); padding-top: env(safe-area-inset-top, 0px); }
+header.top .wrap { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; justify-content: space-between; padding-block: 12px; }
+.brand { font-family: var(--display); font-weight: 700; letter-spacing: 0.08em; font-size: 1rem; }
+.brand b { color: var(--pink); font-weight: 700; }
+.top small { opacity: 0.75; font-size: 0.78rem; }
+
+/* hero */
+.hero { position: relative; overflow: hidden; background: linear-gradient(120deg, var(--bar) 0%, #31136C 52%, #950460 100%); color: #F7F6FB; }
+.hero::before { content: ""; position: absolute; inset: 0; opacity: 0.06; pointer-events: none;
+  background-image: radial-gradient(circle at 50% 50%, #fff 1.4px, transparent 1.6px), linear-gradient(45deg, transparent 47%, #fff 48%, #fff 52%, transparent 53%), linear-gradient(-45deg, transparent 47%, #fff 48%, #fff 52%, transparent 53%);
+  background-size: 18px 18px, 36px 36px, 36px 36px; }
+.hero .wrap { position: relative; padding-block: 34px 30px; display: grid; gap: 22px; }
+.hero h1 { font-family: var(--display); font-weight: 700; font-size: clamp(1.7rem, 4.4vw, 2.7rem); letter-spacing: 0.03em; line-height: 1.15; }
+.hero p { margin: 0; max-width: 62ch; color: #E9E6F5; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.stat { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16); border-radius: 14px; padding: 12px 14px; }
+.stat .k { font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: #FFB3DB; font-weight: 600; }
+.stat .v { font-family: var(--num); font-weight: 700; font-size: 2.3rem; line-height: 1.05; }
+.stat .d { font-size: 0.8rem; color: #E0DCF0; }
+
+/* controls */
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding-block: 22px 8px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--surface); }
+.seg button { font: inherit; font-weight: 600; border: 0; background: transparent; color: var(--ink); padding: 7px 18px; border-radius: 999px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--pink); color: #fff; }
+input[type="search"], select { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; min-width: 0; }
+input[type="search"] { width: min(280px, 100%); }
+
+/* war room */
+.room { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 22px; align-items: start; padding-bottom: 8px; }
+@media (max-width: 900px) { .room { grid-template-columns: 1fr; } }
+.panel { background: var(--bg); border: 1px solid var(--line); border-radius: 18px; padding: 16px; min-width: 0; }
+.panel h2 { margin-bottom: 4px; }
+.panel .sub { font-size: 0.85rem; color: var(--muted); margin: 0 0 12px; }
+
+/* leaderboard */
+.board { display: grid; gap: 2px; }
+.row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 54px minmax(90px, 0.9fr); gap: 10px; align-items: center; padding: 7px 8px; border-radius: 10px; cursor: pointer; border: 1px solid transparent; background: none; font: inherit; color: inherit; text-align: left; width: 100%; }
+.row:hover { background: var(--surface); }
+.row[aria-current="true"] { background: var(--pink-soft); border-color: var(--pink); }
+.row .rk { font-family: var(--num); font-weight: 700; font-size: 1.25rem; color: var(--head); text-align: right; }
+.row .nm { min-width: 0; }
+.row .nm b { font-weight: 600; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.chip { font-size: 0.66rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; border-radius: 999px; padding: 1px 7px; border: 1px solid var(--line); color: var(--muted); }
+.chip.firm { border-color: var(--head); color: var(--head); }
+.chip.cont { border-style: dashed; }
+.chip.rr { border-color: var(--pink); color: var(--pink-deep); }
+.chip.one { border-color: var(--gold); color: var(--gold); }
+.row .sc { font-family: var(--num); font-weight: 700; font-size: 1.15rem; text-align: right; font-variant-numeric: tabular-nums; }
+.row svg { width: 100%; height: 18px; display: block; }
+.cut { border-top: 2px dashed var(--pink); margin: 6px 8px; position: relative; }
+.cut span { position: absolute; right: 0; top: -10px; background: var(--bg); padding: 0 6px; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--pink-deep); font-weight: 600; }
+.more { margin-top: 10px; font: inherit; font-weight: 600; color: var(--pink-deep); background: none; border: 1px solid var(--line); border-radius: 10px; padding: 7px 12px; cursor: pointer; }
+
+/* player file */
+.pf-head { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; }
+.pf-head h3 { font-family: var(--display); font-weight: 700; font-size: 1.45rem; color: var(--head); letter-spacing: 0.02em; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 10px; margin: 14px 0; }
+.card { background: var(--surface); border-radius: 12px; padding: 10px 12px; }
+.card .k { font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--pink-deep); font-weight: 600; }
+.card .v { font-family: var(--num); font-weight: 700; font-size: 1.9rem; line-height: 1.05; color: var(--head); }
+.card .d { font-size: 0.78rem; color: var(--muted); }
+.verdict { border-left: 3px solid var(--pink); padding: 2px 0 2px 12px; margin: 4px 0 14px; }
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.86rem; font-variant-numeric: tabular-nums; }
+th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+th { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+td.r, th.r { text-align: right; }
+tr.thin td { color: var(--grey); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.strip svg { width: 100%; height: auto; display: block; }
+
+/* compare + scatter */
+.duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; padding-block: 22px; }
+@media (max-width: 900px) { .duo { grid-template-columns: 1fr; } }
+.pick { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-bottom: 12px; }
+.pick select { width: 100%; }
+.odds { display: flex; align-items: center; gap: 10px; margin: 6px 0 12px; }
+.odds .bar { flex: 1; height: 12px; border-radius: 6px; background: var(--blue); overflow: hidden; display: flex; }
+.odds .bar span { background: var(--pink); display: block; height: 100%; }
+.odds b { font-family: var(--num); font-size: 1.3rem; }
+#scatter { width: 100%; height: auto; display: block; }
+.tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--bg); font-size: 0.8rem; padding: 6px 9px; border-radius: 8px; z-index: 20; max-width: 240px; }
+
+/* evidence */
+.evid { padding-block: 8px 26px; display: grid; gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 860px) { .grid3 { grid-template-columns: 1fr; } }
+.note { background: var(--surface); border-radius: 14px; padding: 14px 16px; }
+.note h3 { font-size: 0.95rem; color: var(--head); margin-bottom: 6px; }
+.note p, .note ul { margin: 0; font-size: 0.88rem; }
+.note ul { padding-left: 18px; display: grid; gap: 4px; }
+footer { border-top: 1px solid var(--line); }
+footer .wrap { padding-block: 18px 28px; font-size: 0.8rem; color: var(--muted); display: grid; gap: 6px; }
+@media (prefers-reduced-motion: no-preference) { .row, .seg button { transition: background-color .15s, border-color .15s; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">SUPERR SELECTOR <b>·</b> SEASON 2</div>
+    <small>Independent hackathon entry · not an official Rajasthan Royals product</small>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <div class="label" style="color:#FFB3DB">War-room view · Round 1</div>
+      <h1>Who delivers when the match is on the line</h1>
+    </div>
+    <p>Every delivery is valued by how far it moved the chance of winning. The quarter of balls with the most at stake are pressure balls, and each player is rated on what they added on them, after allowing for the opposition, the situation and luck.</p>
+    <div class="stats" id="stats"></div>
+  </div>
+</section>
+
+<main class="wrap">
+  <div class="controls">
+    <div class="seg" role="group" aria-label="List">
+      <button type="button" id="tab-bat" aria-pressed="true">Batters</button>
+      <button type="button" id="tab-bowl" aria-pressed="false">Bowlers</button>
+    </div>
+    <label class="muted" style="display:flex;gap:8px;align-items:center;font-size:.85rem">Find a player
+      <input type="search" id="q" placeholder="Name" autocomplete="off">
+    </label>
+  </div>
+
+  <div class="room">
+    <section class="panel" aria-labelledby="lb-h">
+      <h2 id="lb-h">PeRRformance under pressure</h2>
+      <p class="sub">Final rating, with its 90% interval across 500 redraws of the matches. 0 is the average eligible player. Click a player to open their file.</p>
+      <div class="board" id="board"></div>
+      <button type="button" class="more" id="more">Show all</button>
+    </section>
+    <section class="panel" id="file" aria-live="polite"></section>
+  </div>
+
+  <div class="duo">
+    <section class="panel" aria-labelledby="cmp-h">
+      <h2 id="cmp-h">Head to head</h2>
+      <p class="sub">Pick two players from the same list. Odds come from 500 redraws of the matches, averaged over three win-probability models (top 20 only).</p>
+      <div class="pick">
+        <select id="pa" aria-label="First player"></select>
+        <select id="pb" aria-label="Second player"></select>
+      </div>
+      <div id="cmp"></div>
+    </section>
+    <section class="panel" aria-labelledby="sc-h">
+      <h2 id="sc-h">Rating against certainty</h2>
+      <p class="sub">Each dot is an eligible player. Right of the dashed line means the player makes the top 10 in at least 60% of redraws, the bar for a firm place. Hover for names.</p>
+      <svg id="scatter" viewBox="0 0 560 360" role="img" aria-label="Scatter of rating against share of redraws in the top 10"></svg>
+    </section>
+  </div>
+
+  <section class="evid" aria-labelledby="ev-h">
+    <h2 id="ev-h">How far to trust it</h2>
+    <div class="grid3" id="evid"></div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div><b>Independent entry for SupeRR Selector Season 2.</b> Not affiliated with, endorsed by or produced by Rajasthan Royals or Royal Multisport Pvt. Ltd. Team names appear only as they occur in the supplied data; no logos, crests, player images or sponsor marks are used.</div>
+    <div>Built only from the data pack supplied for the hackathon: 2022 to 2026 IPL and T20 international matches. Method, code and report: <a href="https://github.com/Simhaatt/rr">github.com/Simhaatt/rr</a>. Fonts: Cinzel, Inter and Barlow Condensed (SIL Open Font License).</div>
+  </div>
+</footer>
+<div class="tip" id="tip" hidden></div>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  const D = window.DATA;
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const sg = (v, d = 0) => (v == null ? '–' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(d));
+  const pc = (v) => Math.round(v * 100) + '%';
+  const fmt = (n) => n.toLocaleString('en-GB');
+  const ord = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'));
+  const M = D.meta;
+  let role = 'bat', showAll = false, sel = null;
+  try { const h = location.hash.slice(1); if (h === 'bowlers') role = 'bowl'; } catch (e) {}
+
+  // ---------- headline numbers
+  $('stats').innerHTML = [
+    ['Matches analysed', fmt(M.matches), `${M.ipl} IPL · ${M.intl} international`],
+    ['Deliveries', fmt(M.balls), '2022 to 2026'],
+    ['Pressure balls', fmt(M.pressure_balls), 'top quarter by stakes'],
+    ['Players rated', `${M.bat_n} + ${M.bowl_n}`, 'batters + bowlers, 150+ pressure balls'],
+    ['Clutch skill found', 'None', `shuffle test p = ${M.clutch_p.bat.toFixed(2)} and ${M.clutch_p.bowl.toFixed(2)}`],
+  ].map(([k, v, d]) => `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join('');
+
+  const evidence = (p) => p.tier === 'Firm' ? 'Strong' : (p.tier ? 'Promising' : 'Below the cut');
+  const players = () => D[role].players;
+  const byId = (id) => players().find((p) => p.id === id);
+
+  // ---------- leaderboard
+  function board() {
+    const q = $('q').value.trim().toLowerCase();
+    let list = players().filter((p) => !q || p.name.toLowerCase().includes(q));
+    if (!q && !showAll) list = list.slice(0, 20);
+    const all = players();
+    const lo = Math.min(...all.slice(0, 25).map((p) => p.lo), -0.2), hi = Math.max(...all.map((p) => p.hi));
+    const x = (v) => 4 + (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo) * 192;
+    let html = '';
+    list.forEach((p) => {
+      const chips = [`<span class="chip ${p.tier === 'Firm' ? 'firm' : p.tier ? 'cont' : ''}">${evidence(p)}</span>`];
+      if (p.rank === 1) chips.push('<span class="chip one">No. 1</span>');
+      if (p.rr2026) chips.push('<span class="chip rr">RR 2026 squad</span>');
+      html += `<button type="button" class="row" data-id="${p.id}" aria-current="${p.id === sel}">
+        <span class="rk">${p.rank}</span>
+        <span class="nm"><b>${esc(p.name)}</b><span class="chips">${chips.join('')}</span></span>
+        <span class="sc">${p.rating.toFixed(2)}</span>
+        <svg viewBox="0 0 200 18" aria-hidden="true"><line x1="${x(0)}" x2="${x(0)}" y1="1" y2="17" stroke="var(--dim)" stroke-width="1"/>
+          <line x1="${x(p.lo)}" x2="${x(p.hi)}" y1="9" y2="9" stroke="${p.rank <= 10 ? 'var(--pink)' : 'var(--grey)'}" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
+          <circle cx="${x(p.rating)}" cy="9" r="4.5" fill="${p.rank <= 10 ? 'var(--pink)' : 'var(--grey)'}" stroke="var(--bg)" stroke-width="2"/></svg>
+      </button>`;
+      if (!q && p.rank === 10) html += '<div class="cut" role="separator"><span>Top-10 cut</span></div>';
+    });
+    $('board').innerHTML = html || '<p class="muted">No player matches that name in this list.</p>';
+    $('more').hidden = !!q;
+    $('more').textContent = showAll ? 'Show top 20' : `Show all ${all.length}`;
+    $('board').querySelectorAll('.row').forEach((b) => b.addEventListener('click', () => { sel = +b.dataset.id; board(); file(); }));
+  }
+
+  // ---------- player file
+  const SPL = { bat: [['Phase', ['Powerplay', 'Middle', 'Death']], ['Innings', ['Setting', 'Chasing']], ['Opponent', ['v pace', 'v spin']]],
+                bowl: [['Phase', ['Powerplay', 'Middle', 'Death']], ['Innings', ['Bowling first', 'Defending']], ['Opponent', ['v left-handers', 'v right-handers']]] };
+  function strip(p) {
+    const pts = [['Usual (ordinary balls)', p.usual, 'var(--blue)'], ['Pressure balls, as it happened', p.pressure, 'var(--pink)'], ['Pressure Exam mark', p.exam, 'var(--gold)'], ['Final pressure level (shrunk)', p.level, 'var(--head)']];
+    const vals = pts.map((d) => d[1]).concat([0]);
+    const lo = Math.floor(Math.min(...vals) / 20) * 20, hi = Math.ceil(Math.max(...vals) / 20) * 20;
+    const W = 520, x = (v) => 20 + (v - lo) / (hi - lo || 1) * (W - 40);
+    let s = `<svg viewBox="0 0 ${W} 120" role="img" aria-label="Pressure against usual value">`;
+    for (let t = lo; t <= hi; t += 20) s += `<line x1="${x(t)}" x2="${x(t)}" y1="8" y2="${96}" stroke="var(--line)"/><text x="${x(t)}" y="112" text-anchor="middle" font-size="11" fill="var(--muted)">${sg(t)}</text>`;
+    s += `<line x1="${x(0)}" x2="${x(0)}" y1="8" y2="96" stroke="var(--muted)" stroke-width="1.2"/>`;
+    pts.forEach(([lab, v, c], i) => { const y = 18 + i * 22; s += `<circle cx="${x(v)}" cy="${y}" r="6" fill="${c}" stroke="var(--bg)" stroke-width="2"><title>${lab}: ${sg(v, 1)}</title></circle><text x="${x(v) + (x(v) > W - 150 ? -10 : 10)}" y="${y + 4}" font-size="11" fill="var(--ink)" text-anchor="${x(v) > W - 150 ? 'end' : 'start'}">${lab} ${sg(v, 0)}</text>`; });
+    return s + '</svg>';
+  }
+  function file() {
+    const p = byId(sel) || players()[0]; sel = p.id;
+    const isBat = role === 'bat';
+    const verdict = p.tier === 'Firm'
+      ? `A firm place: top 10 under all three win-probability models and in ${pc(p.p_top10)} of redraws.`
+      : p.tier ? `A contested place: in the top 10 in ${pc(p.p_top10)} of redraws, so a near-equal player could hold it instead.`
+      : `Outside the contest: in the top 10 in ${pc(p.p_top10)} of redraws.`;
+    const fit = ['Powerplay', 'Middle', 'Death'].map((k) => [k, p.splits[k]]).filter(([, v]) => v && v[1] >= 100 && v[0] != null).sort((a, b) => b[1][0] - a[1][0])[0];
+    let rows = '';
+    SPL[role].forEach(([grp, keys]) => keys.forEach((k, i) => {
+      const v = p.splits[k];
+      const thin = !v || v[1] < 40;
+      rows += `<tr class="${thin ? 'thin' : ''}"><td>${i === 0 ? grp : ''}</td><td>${k}</td><td class="r num">${v ? sg(v[0]) : '–'}</td><td class="r">${v ? v[1] : 0}</td><td>${thin ? 'too few balls to read' : ''}</td></tr>`;
+    }));
+    const conv = isBat
+      ? `<tr><td>Strike rate</td><td class="r">${p.sr_p}</td><td class="r">${p.sr_n}</td></tr><tr><td>Average</td><td class="r">${p.avg_p}</td><td class="r">${p.avg_n}</td></tr>`
+      : `<tr><td>Economy</td><td class="r">${p.econ_p}</td><td class="r">${p.econ_n}</td></tr><tr><td>Balls per wicket</td><td class="r">${p.bpw_p}</td><td class="r">${p.bpw_n}</td></tr>`;
+    $('file').innerHTML = `
+      <div class="label">Player file · ${isBat ? 'batter' : 'bowler'}</div>
+      <div class="pf-head"><h3>${esc(p.name)}</h3><span class="muted">${ord(p.rank)} of ${players().length}${p.rr2026 ? ' · in the RR 2026 squad' : ''}</span></div>
+      <div class="cards">
+        <div class="card"><div class="k">Rating</div><div class="v">${p.rating.toFixed(2)}</div><div class="d">90%: ${p.lo.toFixed(2)} to ${p.hi.toFixed(2)}</div></div>
+        <div class="card"><div class="k">Top 10 in</div><div class="v">${pc(p.p_top10)}</div><div class="d">of 500 redraws · ${p.models_top10} of 3 models</div></div>
+        <div class="card"><div class="k">Pressure balls</div><div class="v">${p.n_p}</div><div class="d">${pc(p.ipl_share)} in the IPL</div></div>
+        <div class="card"><div class="k">Consistency</div><div class="v">${sg(p.cons, 1)}</div><div class="d">balls not lost, pts above average</div></div>
+      </div>
+      <div class="verdict"><b>${evidence(p)} evidence.</b> ${verdict} ${fit ? `Best-supported phase: <b>${fit[0].toLowerCase()} overs</b> (${sg(fit[1][0])} on ${fit[1][1]} pressure balls).` : 'No phase has 100 or more pressure balls, so no role is clearly supported.'}</div>
+      <div class="label" style="margin-bottom:4px">Value per 100 balls, 0 = average player</div>
+      <div class="strip">${strip(p)}</div>
+      <p class="sub" style="margin-top:6px">${p.uplift >= 0 ? 'Slightly better' : 'Slightly worse'} under pressure than usual after shrinkage (${sg(p.uplift, 1)}). The data cannot tell any player's rise under pressure from luck, so the rating rewards value under pressure, not the rise.</p>
+      <div class="label" style="margin:14px 0 4px">Where the pressure value comes from</div>
+      <div class="tbl-wrap"><table><thead><tr><th></th><th>Split</th><th class="r">Value</th><th class="r">Balls</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="label" style="margin:14px 0 4px">Conventional numbers</div>
+      <div class="tbl-wrap"><table><thead><tr><th></th><th class="r">Pressure balls</th><th class="r">Other balls</th></tr></thead><tbody>${conv}</tbody></table></div>`;
+  }
+
+  // ---------- head to head
+  function fillPickers() {
+    const opts = players().slice(0, 20).map((p) => `<option value="${p.id}">${p.rank}. ${esc(p.name)}</option>`).join('');
+    $('pa').innerHTML = opts; $('pb').innerHTML = opts;
+    const dec = M.decisions.find((d) => players().some((p) => p.name === d.a));
+    const find = (n) => players().find((p) => p.name === n);
+    if (role === 'bat' && dec) { $('pa').value = find(dec.a).id; $('pb').value = find(dec.c).id; }
+    else { $('pa').value = players()[5].id; $('pb').value = players()[6].id; }
+  }
+  function compare() {
+    const a = byId(+$('pa').value), b = byId(+$('pb').value);
+    if (!a || !b) return;
+    const ids = D[role].h2h_ids, ia = ids.indexOf(a.id), ib = ids.indexOf(b.id);
+    if (a.id === b.id) { $('cmp').innerHTML = '<p class="muted">Pick two different players.</p>'; return; }
+    const odds = D[role].h2h[ia][ib];
+    const line = (lab, fa, fb, better) => `<tr><td>${lab}</td><td class="r ${better === 1 ? '' : ''}">${fa}</td><td class="r">${fb}</td></tr>`;
+    const sp = (p, k) => p.splits[k] ? `${sg(p.splits[k][0])} (${p.splits[k][1]})` : '–';
+    const keys = SPL[role].flatMap(([, k]) => k);
+    $('cmp').innerHTML = `
+      <div class="odds"><b style="color:var(--pink-deep)">${pc(odds)}</b><div class="bar" role="img" aria-label="${esc(a.name)} rates above ${esc(b.name)} in ${pc(odds)} of redraws"><span style="width:${odds * 100}%"></span></div><b style="color:var(--blue)">${pc(1 - odds)}</b></div>
+      <p class="sub">${esc(a.name)} rates above ${esc(b.name)} in ${pc(odds)} of redraws. ${Math.abs(odds - 0.5) < 0.1 ? 'That is close to a coin toss: let the role decide.' : odds > 0.5 ? `The evidence favours ${esc(a.name)}.` : `The evidence favours ${esc(b.name)}.`}</p>
+      <div class="tbl-wrap"><table><thead><tr><th></th><th class="r" style="color:var(--pink-deep)">${esc(a.name)}</th><th class="r" style="color:var(--blue)">${esc(b.name)}</th></tr></thead><tbody>
+        ${line('Rating (90% interval)', `${a.rating.toFixed(2)} (${a.lo.toFixed(2)}–${a.hi.toFixed(2)})`, `${b.rating.toFixed(2)} (${b.lo.toFixed(2)}–${b.hi.toFixed(2)})`)}
+        ${line('Evidence', evidence(a), evidence(b))}
+        ${line('Consistency', sg(a.cons, 1), sg(b.cons, 1))}
+        ${line('Pressure balls', a.n_p, b.n_p)}
+        ${keys.map((k) => line(k, sp(a, k), sp(b, k))).join('')}
+      </tbody></table></div>
+      <p class="sub" style="margin-top:8px">Splits show value per 100 pressure balls, with the number of balls in brackets. Splits under 40 balls are mostly noise.</p>`;
+  }
+
+  // ---------- scatter
+  function scatter() {
+    const svg = $('scatter'), W = 560, H = 360, L = 44, R = 14, T = 14, B = 40;
+    const ps = players();
+    const ymin = Math.floor(Math.min(...ps.map((p) => p.rating)) * 2) / 2, ymax = Math.ceil(Math.max(...ps.map((p) => p.rating)) * 2) / 2;
+    const x = (v) => L + v * (W - L - R), y = (v) => T + (ymax - v) / (ymax - ymin) * (H - T - B);
+    let s = '';
+    for (let t = ymin; t <= ymax + 1e-9; t += 0.5) s += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)"/><text x="${L - 8}" y="${y(t) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${t.toFixed(1)}</text>`;
+    for (let t = 0; t <= 1.0001; t += 0.2) s += `<text x="${x(t)}" y="${H - B + 18}" text-anchor="middle" font-size="11" fill="var(--muted)">${Math.round(t * 100)}%</text>`;
+    s += `<line x1="${x(0.6)}" x2="${x(0.6)}" y1="${T}" y2="${H - B}" stroke="var(--head)" stroke-dasharray="4 4"/>`;
+    s += `<text x="${x(0.6) + 6}" y="${T + 10}" font-size="11" fill="var(--muted)">firm-place bar</text>`;
+    s += `<text x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle" font-size="11" fill="var(--muted)">Share of 500 redraws in the top 10</text>`;
+    s += `<text transform="translate(12 ${(T + H - B) / 2}) rotate(-90)" text-anchor="middle" font-size="11" fill="var(--muted)">Final rating</text>`;
+    [...ps].reverse().forEach((p) => {
+      const top = p.rank <= 10;
+      s += `<circle class="dot" data-id="${p.id}" cx="${x(p.p_top10)}" cy="${y(p.rating)}" r="${top ? 6 : 4.5}" fill="${top ? 'var(--pink)' : 'var(--grey)'}" stroke="var(--bg)" stroke-width="2" style="cursor:pointer"/>`;
+    });
+    ps.slice(0, 2).forEach((p) => { s += `<text x="${x(p.p_top10) - 9}" y="${y(p.rating) + 4}" text-anchor="end" font-size="11" fill="var(--ink)">${esc(p.name.split(' ').slice(-1)[0])}</text>`; });
+    svg.innerHTML = s;
+    const tip = $('tip');
+    svg.querySelectorAll('.dot').forEach((c) => {
+      const p = byId(+c.dataset.id);
+      c.addEventListener('mouseenter', () => { tip.hidden = false; tip.innerHTML = `<b>${p.rank}. ${esc(p.name)}</b><br>Rating ${p.rating.toFixed(2)} · top 10 in ${pc(p.p_top10)}`; });
+      c.addEventListener('mousemove', (e) => { tip.style.left = Math.min(e.clientX + 12, innerWidth - 250) + 'px'; tip.style.top = (e.clientY + 12) + 'px'; });
+      c.addEventListener('mouseleave', () => { tip.hidden = true; });
+      c.addEventListener('click', () => { sel = p.id; board(); file(); $('file').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    });
+  }
+
+  // ---------- evidence notes
+  function evid() {
+    const r = M.rel[role], vc = M.vs_conv[role], ex = M.external;
+    const conv = role === 'bat' ? 'strike rate' : 'economy rate';
+    const d = vc['overall SR/econ'];
+    $('evid').innerHTML = `
+      <div class="note"><h3>Repeatable, within limits</h3><p>Ratings built from two random halves of the matches agree at <b>${r.standard.toFixed(2)}</b> (0 = pure luck, 1 = perfect). Refitting every step on each half alone gives <b>${r.leakfree.toFixed(2)}</b>; the truth lies between. Roughly half of the differences between players are real; the rest is noise no method can remove from this much data.</p></div>
+      <div class="note"><h3>Against ${conv}</h3><p>On matched splits the ${role === 'bat' ? 'batting' : 'bowling'} rating predicts unseen pressure value better than ${conv} in <b>${pc(d.share_rating_ahead)}</b> of splits (average difference in correlation ${sg(d.mean, 2)}). ${role === 'bat' ? 'Batting under pressure is mostly general scoring ability, so we make no claim to beat strike rate; the rating adds dismissals, situation, opposition and uncertainty.' : 'Consistency, how rarely a bowler loses a pressure ball, supplies most of the edge.'}</p></div>
+      <div class="note"><h3>Held-out tests</h3><p>Built on IPL, the rating predicts internationals at <b>${ex.ipl_to_intl[role].rating.toFixed(2)}</b>; built on internationals, it predicts IPL at <b>${ex.intl_to_ipl[role].rating.toFixed(2)}</b>. Built on 2022–25, it predicts 2026 at <b>${ex.season_2026[role].rating.toFixed(2)}</b>${role === 'bat' ? ', too few balls per batter in one season to separate from noise' : ''}.</p></div>
+      <div class="note"><h3>Pressure is not clutch</h3><p>Shuffling which balls count as pressure produces gaps between players as large as the real ones (p = ${M.clutch_p[role].toFixed(2)}). The lists rank who is worth most when it matters, mostly excellent players who keep performing, not players with a special clutch gene.</p></div>
+      <div class="note"><h3>How not to use it</h3><ul><li>Not as a forecast: it describes 2022 to 2026.</li><li>Not on splits under 40 pressure balls.</li><li>Not without the interval: neighbours overlap.</li><li>Not as the whole picture: fielding, captaincy and fitness are outside the data.</li></ul></div>
+      <div class="note"><h3>The method in one line</h3><p>Win probability before every ball → stakes of each ball → value added, half as it happened and half on a standard mark per outcome → adjusted for opponents → shrunk by sample size → Level ${Math.round(M.weights[role].level * 100)}% + Consistency ${Math.round(M.weights[role].cons * 100)}% → averaged over three models. Full report and code on <a href="https://github.com/Simhaatt/rr">GitHub</a>.</p></div>`;
+  }
+
+  function render() {
+    $('tab-bat').setAttribute('aria-pressed', role === 'bat'); $('tab-bowl').setAttribute('aria-pressed', role === 'bowl');
+    if (!byId(sel)) sel = players()[0].id;
+    board(); file(); fillPickers(); compare(); scatter(); evid();
+  }
+  $('tab-bat').addEventListener('click', () => { role = 'bat'; sel = null; try { history.replaceState(null, '', '#batters'); } catch (e) {} render(); });
+  $('tab-bowl').addEventListener('click', () => { role = 'bowl'; sel = null; try { history.replaceState(null, '', '#bowlers'); } catch (e) {} render(); });
+  $('q').addEventListener('input', board);
+  $('more').addEventListener('click', () => { showAll = !showAll; board(); });
+  $('pa').addEventListener('change', compare); $('pb').addEventListener('change', compare);
+  render();
+})();
+</script>
+</body>
+</html>

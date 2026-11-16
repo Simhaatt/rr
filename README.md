@@ -26,7 +26,7 @@ python run_all.py
 
 The full run takes about an hour and a half on a four-core machine. `python run_all.py --quick` runs only the five re-runs the report needs (not all eleven) and 10 leakage-free splits instead of 100, and takes about 35 minutes; the robustness table and leakage figures in the report will then differ slightly. Random seeds are fixed, so the run reproduces every number in the report.
 
-`run_all.py` ends by running `tests/test_outputs.py`, which checks the match counts, the rebuilt results of all 794 decided matches, legal balls per over, wickets per innings, the pressure threshold, eligibility, and that the two lists agree across the CSVs, the submission sheet and the report. It writes `output/verification.json` with the dataset counts, pressure balls, eligible players, model metrics, final lists, random seeds and package versions. Run it alone with `python tests/test_outputs.py` (or `pytest tests/`).
+`run_all.py` ends by running `tests/test_outputs.py`, which checks the match counts, the rebuilt results of all 794 decided matches, legal balls per over, wickets per innings, the pressure threshold, eligibility, and that the two lists agree across the CSVs, the submission sheet and the report. It writes `output/verification.json` with the dataset counts, pressure balls, eligible players, model metrics, final lists, random seeds and package versions. `tests/test_method.py` then checks each step of the method against its defining property: out-of-fold win probability, wickets lowering the batting side's chance, attribution of wides and run-outs, the leverage scale and cap, the pressure bar, shrinkage, the rating formula, the three-model average and match-level resampling. Run either alone with `python tests/test_outputs.py` or `python tests/test_method.py` (or `pytest tests/`).
 
 Outputs: `output/`, `output_alt/` and `output_gbm/` (one folder per win-probability model), and `submission/` (report `.docx`, the two lists and the rating CSVs). The PDF was exported from the `.docx` with Microsoft Word.
 
@@ -44,11 +44,14 @@ Two slow design searches are supplied as results in `static/`, not recomputed by
 | `24_external.py` | Held-out tests: built on 2022-2025 and scored on 2026, built on IPL and scored on internationals, and the reverse |
 | `27_leakfree.py` | Leakage-free split-half test: every step, including the opponent adjustment and exam marks, refitted on each half alone; paired comparison with strike rate and economy |
 | `28_decision.py` | Decision support from existing results: role fit, two illustrative player choices, Rajasthan Royals' 2026 squad, three worked deliveries |
+| `30_dashboard_data.py` | Writes `docs/data.js` for the dashboard |
 | `29_charts.py` | Method flowchart, rating-versus-reliability chart, and one player (Sunil Narine) traced from raw balls to final rating |
 | `11`, `14`-`19`, `21` | Checks: squeeze, knockouts, home and away, all-round, clutch tests, recency, calibration, model agreement |
 | `05b`, `05c`, `08`-`10`, `12`, `13`, `23` | Design searches and rejected ideas (see the report's Appendix A) |
 | `01`-`03`, `04b`, `04c` | Early data profiling and model comparisons |
 | `06_figures.py`, `07_report.py` | Charts and the report |
+
+**Dashboard:** https://simhaatt.github.io/rr/ (source in `docs/`, a static page with no server). Pick batters or bowlers, open any player's file (rating with its interval, evidence tier, pressure value by phase, innings and opponent with ball counts, conventional numbers), compare two players head to head, and see how far to trust the lists. It is an independent hackathon entry, not affiliated with or endorsed by Rajasthan Royals, and uses no team logos, crests, player images or sponsor marks.
 
 `explainer/` holds a plain-language walkthrough of the whole project (`index.html`, built by `build_explainer.py`).
 

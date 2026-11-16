@@ -13,3 +13,4 @@ analysis/26_teamstrength.py
 __pycache__/
 *.pyc
 ~$*
+/.claude/

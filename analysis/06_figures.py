@@ -97,14 +97,19 @@ plt.colorbar(im, ax=ax[1], fraction=0.04, label='Leverage (1.0 = average ball)')
 plt.tight_layout(); plt.savefig(f"{FIG}/f1_leverage_maps.png"); plt.close()
 
 # ---------- Fig 2: calibration
-fig, ax = plt.subplots(1, 2, figsize=(8, 3.5))
+fig, axs = plt.subplots(2, 2, figsize=(8, 4.6), gridspec_kw={'height_ratios': [3, 1]}, sharex='col')
 for i, inn in enumerate((1, 2)):
-    dd = d[d.innings == inn]
+    dd = d[d.innings == inn]; ax0, ax1 = axs[0, i], axs[1, i]
     q = dd.groupby(pd.cut(dd.wp_pre, np.linspace(0, 1, 21)), observed=True).agg(p=('wp_pre', 'mean'), a=('y', 'mean'), n=('y', 'size'))
-    ax[i].plot([0, 1], [0, 1], color=GREY, lw=1, ls='--')
-    ax[i].scatter(q.p, q.a, s=10 + q.n / q.n.max() * 70, color=PINK, zorder=3, edgecolor='white', lw=0.5)
-    ax[i].set_xlabel('Predicted win probability (model not fitted on that match)'); ax[i].set_ylabel('Actual win rate')
-    ax[i].set_title(f"Innings {inn}: log-loss {S[f'wp{inn}']['logloss']:.3f}, AUC {S[f'wp{inn}']['auc']:.3f}")
+    ax0.plot([0, 1], [0, 1], color=GREY, lw=1, ls='--')
+    ax0.scatter(q.p, q.a, s=10 + q.n / q.n.max() * 70, color=PINK, zorder=3, edgecolor='white', lw=0.5)
+    ax0.set_ylabel('Actual win rate')
+    ax0.set_title(f"Innings {inn}: log-loss {S[f'wp{inn}']['logloss']:.3f}, AUC {S[f'wp{inn}']['auc']:.3f}")
+    ax1.bar(q.p, q.n / 1000, width=0.04, color=NAVY)
+    ax1.set_ylabel('Deliveries\n(thousands)', fontsize=7); ax1.set_xlabel('Predicted win probability (out of sample)')
+    for a in (ax0, ax1):
+        for sp_ in ('top', 'right'):
+            a.spines[sp_].set_visible(False)
 plt.tight_layout(); plt.savefig(f"{FIG}/f2_calibration.png"); plt.close()
 
 # ---------- Fig 3: example match
@@ -142,13 +147,14 @@ for role, fn, title in (('bat', 'f4_top10_batters', 'batters'), ('bowl', 'f5_top
     ax[0].scatter(t.exam_rP * 1e4, y, marker='^', color=TEAL, s=26, label='Pressure Exam mark', zorder=3)
     ax[0].scatter(t.level_eb * 1e4, y, marker='D', facecolor='white', edgecolor=PINK, s=26, label='Final pressure level', zorder=4)
     ax[0].axvline(0, color='black', lw=0.6)
-    ax[0].set_yticks(y); ax[0].set_yticklabels([f"{r}. {n}" for r, n in zip(t['rank'], t.name)])
+    ax[0].set_yticks(y); ax[0].set_yticklabels([f"{r}. {n}" + ('' if tr == 'Firm' else '  (contested)') for r, n, tr in zip(t['rank'], t.name, t.tier)])
     ax[0].set_xlabel('Win-probability points added per 100 balls\n(opponent-adjusted, 0 = average player)')
     ax[0].set_title(f'Top-10 {title}: pressure v usual'); ax[0].legend(fontsize=6.5, loc='upper center', bbox_to_anchor=(0.4, -0.24), ncol=4, frameon=False, columnspacing=0.6, handletextpad=0.1)
     ax[1].barh(y, 100 * t.cball, color=TEAL); ax[1].axvline(0, color='black', lw=0.8)
-    ax[1].set_yticks([]); ax[1].set_xlabel('Pressure balls not lost: points above\nthe average for the same kind of ball'); ax[1].set_title('Consistency')
-    ax[2].barh(y, 100 * t.p_top10, color=NAVY); ax[2].set_yticks([]); ax[2].set_xlim(0, 100)
-    ax[2].set_xlabel('% of 500 match-resamples in which\nthe player stays in the top 10'); ax[2].set_title('Robustness')
+    ax[1].set_yticks([]); ax[1].set_xlabel('Pressure balls not lost\n(points above average)'); ax[1].set_title('Consistency')
+    ax[2].barh(y, 100 * t.p_top10, color=[NAVY if tr == 'Firm' else GREY for tr in t.tier]); ax[2].set_yticks([]); ax[2].set_xlim(0, 100)
+    ax[2].axvline(60, color=PINK, lw=1, ls='--')
+    ax[2].set_xlabel('% of resamples in the top 10\n(navy = firm, grey = contested)'); ax[2].set_title('Robustness')
     plt.tight_layout(); plt.savefig(f"{FIG}/{fn}.png"); plt.close()
 
 # ---------- Fig 6: rank intervals

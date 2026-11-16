@@ -67,11 +67,15 @@ run('21_altwp.py', O, os.path.join(ROOT, 'output_alt'))
 run('24_external.py', O)                          # needs the season and competition re-runs from step 3
 run('27_leakfree.py', O, 10 if QUICK else 100)    # every step refitted on each half alone (about 25 minutes for 100 splits)
 run('28_decision.py', O, DATA); run('29_charts.py', O)
+run('30_dashboard_data.py', O, DATA, os.path.join(ROOT, 'docs'))     # data for the dashboard in docs/
 
 # 6. Charts and the report
 run('06_figures.py', O); run('07_report.py', O, os.path.join(ROOT, 'submission'))
 print(open(os.path.join(ROOT, 'submission', 'SUBMISSION_top10_lists.md'), encoding='utf-8').read())
 
 # 7. Automated checks; writes output/verification.json
-r = subprocess.run([sys.executable, '-I', os.path.join(ROOT, 'tests', 'test_outputs.py')], env=ENV, capture_output=True, text=True)
-print(r.stdout); sys.exit(r.returncode)
+rc = 0
+for tf in ('test_outputs.py', 'test_method.py'):
+    r = subprocess.run([sys.executable, '-I', os.path.join(ROOT, 'tests', tf)], env=ENV, capture_output=True, text=True)
+    print(r.stdout); rc |= r.returncode
+sys.exit(rc)
