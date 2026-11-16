@@ -143,7 +143,6 @@ footer .wrap { padding-block: 18px 28px; font-size: 0.8rem; color: var(--muted);
 <header class="top">
   <div class="wrap">
     <div class="brand">SUPERR SELECTOR <b>·</b> SEASON 2</div>
-    <small>Independent hackathon entry · not an official Rajasthan Royals product</small>
   </div>
 </header>
 
@@ -230,7 +229,6 @@ footer .wrap { padding-block: 18px 28px; font-size: 0.8rem; color: var(--muted);
     ['Deliveries', fmt(M.balls), '2022 to 2026'],
     ['Pressure balls', fmt(M.pressure_balls), 'top quarter by stakes'],
     ['Players rated', `${M.bat_n} + ${M.bowl_n}`, 'batters + bowlers, 150+ pressure balls'],
-    ['Clutch skill found', 'None', `shuffle test p = ${M.clutch_p.bat.toFixed(2)} and ${M.clutch_p.bowl.toFixed(2)}`],
   ].map(([k, v, d]) => `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join('');
 
   const evidence = (p) => p.tier === 'Firm' ? 'Strong' : (p.tier ? 'Promising' : 'Below the cut');
