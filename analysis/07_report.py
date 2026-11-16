@@ -155,7 +155,7 @@ P(f"**How sure we are.** Ratings built from two random halves of the matches agr
 P("**How Rajasthan Royals can use it.** Section 8 reads each player's rating alongside the role their evidence supports and how sure we can be, works through two close selection choices, and places Rajasthan Royals' own 2026 squad in both lists.", size=SZ)
 
 # ============ Executive summary, page 2: key findings, how to read, where the brief is answered
-doc.add_heading("Key findings", 2).paragraph_format.page_break_before = True
+P("Key findings", bold=True, size=12, color=NAVY).paragraph_format.page_break_before = True
 _DS0 = json.load(open(f"{OUT}/decision_summary.json"))
 _rrb = [r for r in _DS0['bat'] if r['rr_2026']]; _rrw = [r for r in _DS0['bowl'] if r['rr_2026']]
 _LF0 = json.load(open(f"{OUT}/leakfree_summary.json"))
@@ -165,19 +165,19 @@ B(f"**{num(nfirm(bat))} batting and {num(nfirm(bowl)).lower()} bowling places ar
 B(f"**Bowlers are separated by how rarely they lose a pressure ball.** That carries {CW * 100:.0f}% of the bowling rating, which predicts unseen pressure performance better than economy rate in {pc(_LF0['bowl']['diff']['overall SR/econ']['share_rating_ahead'])} of tests. For batters, plain strike rate predicts as well as our rating: batting under pressure is mostly general scoring ability, and the rating adds dismissals, situation and opposition.")
 B(f"**Role matters as much as rank.** Most of the top batters earn their value in the powerplay or middle overs; only {andj(_dth0)} {'has' if len(_dth0) == 1 else 'have'} a large sample at the death. Section 8 reads each player's rating alongside the role their evidence supports.")
 B(f"**Rajasthan Royals' 2026 squad.** {_rrb[0]['name']} ranks {ordn(_rrb[0]['rank'])} among batters and {_rrb[1]['name']} {ordn(_rrb[1]['rank'])}; {_rrw[0]['name']} is the only squad bowler in the top 50 ({ordn(_rrw[0]['rank'])}). Pressure bowling is where the squad would gain most.")
-doc.add_heading("How to read this report", 2)
-T(pd.DataFrame({'Level': ['Executive summary', 'Main report', 'Appendices', 'Dashboard and code'],
-                'What it holds': ['The two lists, the method in brief and the key findings', 'Pressure definition (3), performance measurement (4), fair comparisons (5), evidence for the top 10 (6), reliability and limitations (7), use in selection (8)',
-                                  'A: how each design choice was tested. B: detailed tables. C: reproducing the results. D: one player traced from raw balls to rating. E: questions a judge might ask. F: ranks 1 to 25',
-                                  'simhaatt.github.io/rr: every player\'s file, head to head and how far to trust it. github.com/Simhaatt/rr: all code, which reproduces every number here'],
-                'For': ['A first read', 'Checking the method and the evidence', 'Depth on any point', 'Exploring players; rerunning the analysis']}), widths=[3.2, 10.0, 3.8], size=8.5)
-doc.add_heading("Where the brief is answered", 2)
-T(pd.DataFrame({'The brief asks for': ['Pressure definition', 'Performance measurement', 'Fair comparisons', 'Evidence for the top 10', 'Reliability and limitations', 'A method others can reproduce'],
-                'Where': ['Section 3: leverage (3.1 to 3.4), squeeze (3.5), match importance (3.6)', "Section 4: ball value, the Pressure Exam, each player's usual level, the rating, what each part adds",
-                          'Section 5, with shrinkage (4.4)', 'Section 6, and Section 8 for role and selection',
-                          'Section 7: stability, unseen matches, leakage audit, held-out season and competition, clutch, limitations', 'Appendix C, with the code and dashboard; Appendix D traces one player end to end']}), widths=[5.0, 12.0], size=8.5)
+P("**Explore and check.** Every player's file, head-to-head comparisons and how far to trust the lists are on the dashboard at simhaatt.github.io/rr. All code, which reproduces every number in this report, is at github.com/Simhaatt/rr.", size=SZ)
 
-# ============ 2. Data
+# ============ Contents (a Word table-of-contents field; page numbers are filled in when the PDF is exported)
+_ct = P("Contents", bold=True, size=15, color=NAVY); _ct.paragraph_format.page_break_before = True; _ct.paragraph_format.space_after = Pt(10)
+_tp = doc.add_paragraph(); _r = _tp.add_run()
+for _tag, _txt in (('begin', None), (None, 'TOC \\o "1-2" \\h \\z \\u'), ('separate', None), (None, None), ('end', None)):
+    if _tag:
+        _f = OxmlElement('w:fldChar'); _f.set(qn('w:fldCharType'), _tag); _r._r.append(_f)
+    elif _txt:
+        _it = OxmlElement('w:instrText'); _it.set(qn('xml:space'), 'preserve'); _it.text = _txt; _r._r.append(_it)
+    else:
+        _t = OxmlElement('w:t'); _t.text = 'Right-click and choose Update Field to show the contents.'; _r._r.append(_t)
+
 P("The method at a glance", bold=True, size=12, color=NAVY).paragraph_format.page_break_before = True
 F('f13_flowchart', "The method at a glance. Sections 2 to 8 describe each step.", 13.5)
 doc.add_heading("2. Data and preparation", 1)
