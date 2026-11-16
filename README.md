@@ -44,6 +44,7 @@ Two slow design searches are supplied as results in `static/`, not recomputed by
 | `24_external.py` | Held-out tests: built on 2022-2025 and scored on 2026, built on IPL and scored on internationals, and the reverse |
 | `27_leakfree.py` | Leakage-free split-half test: every step, including the opponent adjustment and exam marks, refitted on each half alone; paired comparison with strike rate and economy |
 | `28_decision.py` | Decision support from existing results: role fit, two illustrative player choices, Rajasthan Royals' 2026 squad, three worked deliveries |
+| `31_types.py` | Why so many spinners and fast scorers: pace and spin economy on pressure balls by phase and competition; strike rate of the top 10 against the pool |
 | `30_dashboard_data.py` | Writes `docs/data.js` for the dashboard |
 | `29_charts.py` | Method flowchart, rating-versus-reliability chart, and one player (Sunil Narine) traced from raw balls to final rating |
 | `11`, `14`-`19`, `21` | Checks: squeeze, knockouts, home and away, all-round, clutch tests, recency, calibration, model agreement |

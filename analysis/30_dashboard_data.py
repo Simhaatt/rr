@@ -10,6 +10,7 @@ CON = pickle.load(open(f'{OUT}/consensus.pkl', 'rb'))
 R = pickle.load(open(f'{OUT}/results.pkl', 'rb'))
 S = json.load(open(f'{OUT}/summary.json')); LF = json.load(open(f'{OUT}/leakfree_summary.json')); EX = json.load(open(f'{OUT}/external_summary.json'))
 DS = json.load(open(f'{OUT}/decision_summary.json'))
+TY = json.load(open(f'{OUT}/types_summary.json'))
 mp = pd.read_csv(f'{DATA}/competition_team_player_mapping.csv')
 rr = set(mp[(mp.team_name.str.contains('Rajasthan', na=False)) & (mp.comp_name == 'IPL 2026')].player_id)
 r2 = lambda v: None if v is None or (isinstance(v, float) and not np.isfinite(v)) else round(float(v), 2)
@@ -44,7 +45,7 @@ D = {'meta': {'matches': S['matches_used'], 'ipl': S['ipl_matches'], 'intl': S['
               'clutch_p': {'bat': r2(S['checks']['bat_perm']['p_spread']), 'bowl': r2(S['checks']['bowl_perm']['p_spread'])},
               'vs_conv': {r: {k: {kk: r2(vv) for kk, vv in v.items()} for k, v in LF[r]['diff'].items()} for r in ('bat', 'bowl')},
               'external': {k: {r: {'rating': r2(EX[k][r]['rows']['Our rating']['r']), 'n': EX[k][r]['n_players']} for r in ('bat', 'bowl')} for k in ('season_2026', 'ipl_to_intl', 'intl_to_ipl')},
-              'examples': DS['examples'], 'decisions': [{'a': d['a']['name'], 'c': d['c']['name'], 'phase': d['phase'], 'a_ahead': r2(d['a_ahead'])} for d in DS['decisions']]}}
+              'types': {k: v for k, v in TY.items() if k != 'types'}, 'examples': DS['examples'], 'decisions': [{'a': d['a']['name'], 'c': d['c']['name'], 'phase': d['phase'], 'a_ahead': r2(d['a_ahead'])} for d in DS['decisions']]}}
 for role in ('bat', 'bowl'):
     C = CON[role].sort_values('rank_c'); t = R['res'][role]['table']; B = boots(role); sp = splits(role)
     players = []
@@ -55,7 +56,7 @@ for role in ('bat', 'bowl'):
         players.append({'id': int(p), 'name': C.name[p], 'rank': int(C.rank_c[p]), 'rating': r2(C.score_c[p]), 'lo': r2(np.percentile(B[p] - sh, 5)), 'hi': r2(np.percentile(B[p] - sh, 95)),
                         'tier': C.tier[p] or '', 'p_top10': r2(C.p_top10_c[p]), 'models_top10': int(C.n_models_top10[p]), 'n_p': int(x.n_P),
                         'usual': r2(x.T_rN * 1e4), 'pressure': r2(x.T_rP * 1e4), 'exam': r2(x.exam_rP * 1e4), 'level': r2(x.level_eb * 1e4), 'uplift': r2(x.uplift_eb * 1e4),
-                        'cons': r2(x.cball * 100), 'ipl_share': r2(x.ipl_share_P), 'rr2026': bool(p in rr), 'splits': sp.get(int(p), {}), **conv})
+                        'cons': r2(x.cball * 100), 'ipl_share': r2(x.ipl_share_P), 'rr2026': bool(p in rr), 'btype': (TY['types'].get(str(int(p))) if role == 'bowl' else None), 'splits': sp.get(int(p), {}), **conv})
     top = list(C.index[:20])
     D[role] = {'players': players, 'h2h_ids': [int(p) for p in top], 'h2h': [[r2((B[a] > B[c]).mean()) for c in top] for a in top]}
 open(f'{DOCS}/data.js', 'w', encoding='utf-8').write('window.DATA = ' + json.dumps(D, separators=(',', ':')) + ';\n')

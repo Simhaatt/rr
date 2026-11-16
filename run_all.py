@@ -66,7 +66,7 @@ run('17_checks.py', O, 400); run('18_recency.py', O); run('19_more.py', O)
 run('21_altwp.py', O, os.path.join(ROOT, 'output_alt'))
 run('24_external.py', O)                          # needs the season and competition re-runs from step 3
 run('27_leakfree.py', O, 10 if QUICK else 100)    # every step refitted on each half alone (about 25 minutes for 100 splits)
-run('28_decision.py', O, DATA); run('29_charts.py', O)
+run('28_decision.py', O, DATA); run('29_charts.py', O); run('31_types.py', O)
 run('30_dashboard_data.py', O, DATA, os.path.join(ROOT, 'docs'))     # data for the dashboard in docs/
 
 # 6. Charts and the report

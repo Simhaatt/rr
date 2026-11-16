@@ -204,6 +204,11 @@ footer .wrap { padding-block: 18px 28px; font-size: 0.8rem; color: var(--muted);
       <button type="button" id="tab-bat" aria-pressed="true">Batters</button>
       <button type="button" id="tab-bowl" aria-pressed="false">Bowlers</button>
     </div>
+    <div class="seg" role="group" aria-label="Bowling type" id="typeseg" hidden>
+      <button type="button" data-t="" aria-pressed="true">All bowlers</button>
+      <button type="button" data-t="Pace" aria-pressed="false">Pace</button>
+      <button type="button" data-t="Spin" aria-pressed="false">Spin</button>
+    </div>
     <label class="muted" style="display:flex;gap:8px;align-items:center;font-size:.85rem">Find a player
       <input type="search" id="q" placeholder="Name" autocomplete="off">
     </label>
@@ -212,7 +217,7 @@ footer .wrap { padding-block: 18px 28px; font-size: 0.8rem; color: var(--muted);
   <div class="room">
     <section class="panel" aria-labelledby="lb-h">
       <h2 id="lb-h">PeRRformance under pressure</h2>
-      <p class="sub">Ranked by pressure rating. Tap a player to see why they rank where they do.</p>
+      <p class="sub" id="lbsub">Ranked by pressure rating. Tap a player to see why they rank where they do.</p>
       <div class="board" id="board"></div>
       <button type="button" class="more" id="more">Show all</button>
     </section>
@@ -262,7 +267,7 @@ footer .wrap { padding-block: 18px 28px; font-size: 0.8rem; color: var(--muted);
   const ord = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'));
   const last = (n) => n.split(' ').slice(-1)[0];
   const M = D.meta;
-  let role = 'bat', showAll = false, sel = null;
+  let role = 'bat', showAll = false, sel = null, btype = '';
   try { if (location.hash.slice(1) === 'bowlers') role = 'bowl'; } catch (e) {}
 
   $('stats').innerHTML = [
@@ -280,7 +285,8 @@ footer .wrap { padding-block: 18px 28px; font-size: 0.8rem; color: var(--muted);
   // ---------- leaderboard
   function board() {
     const q = $('q').value.trim().toLowerCase();
-    let list = players().filter((p) => !q || p.name.toLowerCase().includes(q));
+    const tf = role === 'bowl' ? btype : '';
+    let list = players().filter((p) => (!q || p.name.toLowerCase().includes(q)) && (!tf || p.btype === tf));
     if (!q && !showAll) list = list.slice(0, 20);
     const all = players();
     const lo = Math.min(...all.slice(0, 25).map((p) => p.lo), -0.2), hi = Math.max(...all.map((p) => p.hi));
@@ -288,6 +294,7 @@ footer .wrap { padding-block: 18px 28px; font-size: 0.8rem; color: var(--muted);
     let html = '';
     list.forEach((p) => {
       const chips = [`<span class="chip ${p.tier === 'Firm' ? 'firm' : p.tier ? 'cont' : ''}">${tierWord(p)}</span>`];
+      if (p.btype) chips.push(`<span class="chip">${p.btype}</span>`);
       if (p.rr2026) chips.push('<span class="chip rr">RR 2026 squad</span>');
       const c = p.rank <= 10 ? 'var(--pink)' : 'var(--grey)';
       html += `<button type="button" class="row" data-id="${p.id}" aria-current="${p.id === sel}">
@@ -298,11 +305,12 @@ footer .wrap { padding-block: 18px 28px; font-size: 0.8rem; color: var(--muted);
           <line x1="${x(p.lo)}" x2="${x(p.hi)}" y1="9" y2="9" stroke="${c}" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
           <circle cx="${x(p.rating)}" cy="9" r="4.5" fill="${c}" stroke="var(--bg)" stroke-width="2"/></svg>
       </button>`;
-      if (!q && p.rank === 10) html += '<div class="cut" role="separator"><span>Top 10 above this line</span></div>';
+      if (!q && !tf && p.rank === 10) html += '<div class="cut" role="separator"><span>Top 10 above this line</span></div>';
     });
     $('board').innerHTML = html || '<p class="muted">No player matches that name in this list.</p>';
-    $('more').hidden = !!q;
-    $('more').textContent = showAll ? 'Show top 20 only' : `Show all ${all.length}`;
+    const nAll = tf ? all.filter((p) => p.btype === tf).length : all.length;
+    $('more').hidden = !!q || nAll <= 20;
+    $('more').textContent = showAll ? 'Show top 20 only' : `Show all ${nAll}`;
     $('board').querySelectorAll('.row').forEach((b) => b.addEventListener('click', () => { sel = +b.dataset.id; board(); file(); if (innerWidth < 900) $('file').scrollIntoView({ behavior: 'smooth', block: 'start' }); }));
   }
 
@@ -425,29 +433,40 @@ footer .wrap { padding-block: 18px 28px; font-size: 0.8rem; color: var(--muted);
     });
   }
 
+  // ---------- why so many spinners / fast scorers
+  function whyNote() {
+    const T = M.types, e = T.econ_phase;
+    if (role === 'bowl') return `<div class="note"><h3>Why so many spinners?</h3><p>Eight of the top 10 are spinners, though spinners are only ${T.bowl.pool.Spin} of the ${T.bowl.pool.Spin + T.bowl.pool.Pace} rated bowlers. On pressure balls, spin conceded fewer runs than pace in every phase: ${e['MID|Spin'].econ.toFixed(1)} against ${e['MID|Pace'].econ.toFixed(1)} an over in the middle overs, ${e['DEATH|Spin'].econ.toFixed(1)} against ${e['DEATH|Pace'].econ.toFixed(1)} at the death, with wickets falling about as often. Most pressure comes in the middle of a chase, where spin squeezes the required rate. Part of this is captains choosing when to bowl spin. Need a seamer? Use the <b>Pace</b> filter above: ${T.bowl.top_pace.slice(0, 3).map(([n, r]) => `${esc(n)} (${ord(r)})`).join(', ')} lead it.</p></div>`;
+    return `<div class="note"><h3>Why so many fast scorers?</h3><p>The top 10 strike at ${Math.round(T.bat.sr_top10)} on average, against ${Math.round(T.bat.sr_pool)} for all rated batters. Most pressure balls come in a chase (${pc(T.press_chase_share)}), where every dot ball pushes the required rate up, so scoring quickly is worth a lot. It isn't strike rate alone: getting out costs heavily, which is why Kohli and Iyer make the list by scoring faster under pressure than usual and rarely getting out.</p></div>`;
+  }
+
   // ---------- trust notes
   function evid() {
     const r = M.rel[role], d = M.vs_conv[role]['overall SR/econ'], ex = M.external;
     const conv = role === 'bat' ? 'strike rate' : 'economy rate';
     $('evid').innerHTML = `
+      ${whyNote()}
       <div class="note"><h3>A real signal, with noise</h3><p>We split the matches into two random halves and rated everyone twice. The two ratings agree at about <b>${r.leakfree.toFixed(2)}–${r.standard.toFixed(2)}</b> on a scale from 0 (pure luck) to 1 (identical). Roughly half of the gap between two players is real skill; the rest is chance that no method can remove.</p></div>
       <div class="note"><h3>Compared with ${conv}</h3><p>${role === 'bat'
         ? `For batters, plain strike rate predicts future pressure performance about as well as our rating (ours was ahead in ${pc(d.share_rating_ahead)} of tests). Batting under pressure is mostly general batting skill. Our rating adds what strike rate misses: wickets, the match situation and the quality of the bowling.`
         : `For bowlers, our rating predicted future pressure performance better than economy rate in <b>${pc(d.share_rating_ahead)}</b> of tests. The edge comes from counting how often a bowler wins a pressure ball, not just runs conceded.`}</p></div>
       <div class="note"><h3>Tested on matches it never saw</h3><p>Built only on IPL games, the rating still picked out the best performers in internationals (agreement ${ex.ipl_to_intl[role].rating.toFixed(2)}), and the other way round (${ex.intl_to_ipl[role].rating.toFixed(2)}). ${role === 'bat' ? 'One season alone is too short to judge batters fairly.' : `Built on 2022–25, it predicted 2026 at ${ex.season_2026[role].rating.toFixed(2)}.`}</p></div>
       <div class="note"><h3>Pressure is not "clutch"</h3><p>We checked whether some players truly lift their game under pressure. Across all players, the data cannot tell that from luck. So these lists show who is worth most when it matters, mostly excellent players who keep performing, not players with a special clutch gene.</p></div>
-      <div class="note"><h3>How not to use it</h3><ul><li>Not as a forecast: it describes 2022 to 2026.</li><li>Not on situations with fewer than 40 pressure balls.</li><li>Not without the likely range: neighbours often overlap.</li><li>Not as the whole picture: fielding, captaincy and fitness are not in the data.</li></ul></div>
-      <div class="note"><h3>Want the detail?</h3><p>The full report explains every step, every test and every limit, and the code reproduces every number. Both are on <a href="https://github.com/Simhaatt/rr">GitHub</a>.</p></div>`;
+      <div class="note"><h3>How not to use it</h3><ul><li>Not as a forecast: it describes 2022 to 2026.</li><li>Not on situations with fewer than 40 pressure balls.</li><li>Not without the likely range: neighbours often overlap.</li><li>Not as the whole picture: fielding, captaincy and fitness are not in the data.</li></ul></div>`;
   }
 
   function render() {
     $('tab-bat').setAttribute('aria-pressed', role === 'bat'); $('tab-bowl').setAttribute('aria-pressed', role === 'bowl');
+    $('typeseg').hidden = role !== 'bowl';
+    $('typeseg').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.t === btype));
+    $('lbsub').textContent = role === 'bowl' && btype ? `${btype} bowlers only, with their overall rank among all ${players().length} bowlers. Tap a player to see why they rank where they do.` : 'Ranked by pressure rating. Tap a player to see why they rank where they do.';
     if (!byId(sel)) sel = players()[0].id;
     board(); file(); fillPickers(); compare(); scatter(); evid();
   }
   $('tab-bat').addEventListener('click', () => { role = 'bat'; sel = null; try { history.replaceState(null, '', '#batters'); } catch (e) {} render(); });
   $('tab-bowl').addEventListener('click', () => { role = 'bowl'; sel = null; try { history.replaceState(null, '', '#bowlers'); } catch (e) {} render(); });
   $('q').addEventListener('input', board);
+  $('typeseg').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { btype = b.dataset.t; showAll = false; const first = players().find((p) => !btype || p.btype === btype); if (first) sel = first.id; render(); }));
   $('more').addEventListener('click', () => { showAll = !showAll; board(); });
   $('pa').addEventListener('change', compare); $('pb').addEventListener('change', compare);
   render();
