@@ -99,7 +99,7 @@ P(f"The pack has six files: competitions, teams, matches, the ball-by-ball log, 
 table(['Step', 'Count', 'Why'], [['Matches in the pack', S['matches_total'], 'IPL 2022 to 2026 and T20 internationals'], ['With ball-by-ball records', S['matches_with_bbb'], 'The rest have only a scorecard line'],
                                ['Rain-revised matches removed', S['dls_excluded'], 'A revised target makes "runs needed" ambiguous'], ['Abandoned or incomplete removed', 30, 'No clean result to learn from'],
                                ['<strong>Matches analysed</strong>', f"<strong>{S['matches_used']}</strong>", f"{S['ipl_matches']} IPL and {S['intl_matches']} international; {S['balls_used']:,} deliveries"]], right=(1,))
-UL(['<strong>Which balls are legal.</strong> The extras column marks wides, "Overstep" and "other". We guessed that "other" is a no-ball and tested it: counting all three as illegal makes 31,757 of 32,338 overs exactly six balls long, and the rest are overs that never finished. The guess holds.',
+UL(['<strong>Which balls are legal.</strong> The extras column marks wides, "Overstep" and "other". We guessed that "other" is a no-ball and tested it: counting all three as illegal makes 31,757 of 32,338 overs exactly six balls long; all but one of the rest are overs that never finished (the exception has seven legal balls, a miscount by the umpire). The guess holds.',
     '<strong>The state before every ball.</strong> We rebuilt balls left, runs, wickets lost and, in a chase, runs needed. The rebuilt totals give the recorded winner in all 794 decided matches.',
     '<strong>Par.</strong> A total of 180 is ordinary in IPL 2026 and big in a 2022 international. For each competition and year we computed the average first-innings total (171 in IPL 2022, 196 in IPL 2026, 166 to 180 in internationals) and gave it to the model.'])
 
@@ -270,7 +270,7 @@ UL(['<strong>The scoreboard, not the conditions.</strong> The model knows the ma
 # ---- 16
 H2('files', '16. Files and glossary')
 table(['File', 'What it is'], [['<code>submission/SupeRR_Selector_R1_Methodology_Report.pdf</code>', 'The report to upload (a .docx copy sits beside it)'], ['<code>submission/SUBMISSION_top10_lists.md</code>', 'The two lists to enter'],
-                               ['<code>submission/*_consensus_ratings.csv</code>', 'Every eligible player with the final ratings and tiers'], ['<code>analysis/</code>', 'The scripts, run in the order given in section 8 of the report'],
+                               ['<code>submission/*_consensus_ratings.csv</code>', 'Every eligible player with the final ratings and tiers'], ['<code>analysis/</code>', 'The scripts, run in order by run_all.py (section 9 of the report; code at github.com/Simhaatt/rr)'],
                                ['<code>kaggle/</code>', 'The Kaggle notebook and dataset that ran the three-model version'], ['<code>kaggle/brief_version/</code>', 'The previous version with the brief\'s 50/25/25 weights, kept for comparison']])
 w('''<dl>
 <dt>Win probability</dt><dd>The chance that the batting side wins from a given situation.</dd>

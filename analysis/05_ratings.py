@@ -11,6 +11,10 @@ if _os.environ.get('ONLY'):
     b = b[b.group == _os.environ['ONLY']].reset_index(drop=True)
 if _os.environ.get('DROPYEAR'):
     b = b[b.year != int(_os.environ['DROPYEAR'])].reset_index(drop=True)
+if _os.environ.get('HALF'):        # leakage-free tests (27_leakfree.py): keep one random half of the matches BEFORE anything is fitted
+    _seed, _h = map(int, _os.environ['HALF'].split(','))
+    _m = np.sort(b.match_id.unique()); _hh = np.random.RandomState(_seed).randint(0, 2, len(_m))
+    b = b[b.match_id.isin(_m[_hh == _h])].reset_index(drop=True)
 NSPLIT = int(_os.environ.get('NSPLIT', '100'))
 
 PCT = float(_os.environ.get('PCT', '0.75'))            # pressure = top quartile of deliveries by leverage

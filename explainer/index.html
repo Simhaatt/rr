@@ -116,7 +116,7 @@ flowchart LR
 <tr><td><strong>Matches analysed</strong></td><td class="r"><strong>803</strong></td><td class="wrap">353 IPL and 450 international; 191,903 deliveries</td></tr>
 </table></div>
 <ul>
-<li><strong>Which balls are legal.</strong> The extras column marks wides, "Overstep" and "other". We guessed that "other" is a no-ball and tested it: counting all three as illegal makes 31,757 of 32,338 overs exactly six balls long, and the rest are overs that never finished. The guess holds.</li>
+<li><strong>Which balls are legal.</strong> The extras column marks wides, "Overstep" and "other". We guessed that "other" is a no-ball and tested it: counting all three as illegal makes 31,757 of 32,338 overs exactly six balls long; all but one of the rest are overs that never finished (the exception has seven legal balls, a miscount by the umpire). The guess holds.</li>
 <li><strong>The state before every ball.</strong> We rebuilt balls left, runs, wickets lost and, in a chase, runs needed. The rebuilt totals give the recorded winner in all 794 decided matches.</li>
 <li><strong>Par.</strong> A total of 180 is ordinary in IPL 2026 and big in a 2022 international. For each competition and year we computed the average first-innings total (171 in IPL 2022, 196 in IPL 2026, 166 to 180 in internationals) and gave it to the model.</li>
 </ul>
@@ -406,7 +406,7 @@ flowchart LR
 <tr><td class="wrap"><code>submission/SupeRR_Selector_R1_Methodology_Report.pdf</code></td><td class="wrap">The report to upload (a .docx copy sits beside it)</td></tr>
 <tr><td class="wrap"><code>submission/SUBMISSION_top10_lists.md</code></td><td>The two lists to enter</td></tr>
 <tr><td class="wrap"><code>submission/*_consensus_ratings.csv</code></td><td class="wrap">Every eligible player with the final ratings and tiers</td></tr>
-<tr><td><code>analysis/</code></td><td class="wrap">The scripts, run in the order given in section 8 of the report</td></tr>
+<tr><td><code>analysis/</code></td><td class="wrap">The scripts, run in order by run_all.py (section 9 of the report; code at github.com/Simhaatt/rr)</td></tr>
 <tr><td><code>kaggle/</code></td><td class="wrap">The Kaggle notebook and dataset that ran the three-model version</td></tr>
 <tr><td><code>kaggle/brief_version/</code></td><td class="wrap">The previous version with the brief's 50/25/25 weights, kept for comparison</td></tr>
 </table></div>

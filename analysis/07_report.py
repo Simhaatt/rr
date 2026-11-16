@@ -13,6 +13,7 @@ R = pickle.load(open(f"{OUT}/results.pkl", 'rb'))
 
 # ---- consensus view: the final rating is the average over three win-probability models (see 20_consensus.py)
 CON = pickle.load(open(f"{OUT}/consensus.pkl", 'rb'))
+LF = json.load(open(f"{OUT}/leakfree_summary.json"))     # leakage-free split halves (27_leakfree.py)
 _W = {'50/25/25 (base)': (0.5, 0.25, 0.25), '100/0/0': (1, 0, 0), '40/40/20': (0.4, 0.4, 0.2), '60/20/20': (0.6, 0.2, 0.2), '34/33/33': (0.34, 0.33, 0.33),
       '50/0/50': (0.5, 0, 0.5), '50/50/0': (0.5, 0.5, 0), '70/15/15': (.7, .15, .15)}
 for _role in ('bat', 'bowl'):
@@ -90,12 +91,13 @@ def T(df, widths=None, size=8.5, header_fill='0B1F4B', left=()):
         cell = t.rows[0].cells[j]; cell.text = ''
         r = cell.paragraphs[0].add_run(str(c)); r.bold = True; r.font.size = Pt(size); r.font.color.rgb = RGBColor(255, 255, 255)
         shade(cell, header_fill)
+    _wide = {j for j in range(len(df.columns)) if df.iloc[:, j].astype(str).str.len().max() > 14}     # long text reads better left-aligned
     for i, row in enumerate(df.itertuples(index=False)):
         cells = t.add_row().cells
         for j, v in enumerate(row):
             cells[j].text = ''
             r = cells[j].paragraphs[0].add_run(str(v)); r.font.size = Pt(size)
-            if (j > 1 and j not in left) or (j == 0 and len(str(v)) < 4):
+            if (j > 1 and j not in left and j not in _wide) or (j == 0 and len(str(v)) < 4):
                 cells[j].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
             if i % 2 == 1:
                 shade(cells[j], 'F3F4F8')
@@ -149,13 +151,29 @@ P(f"**What we mean by pressure.** A ball is under pressure when its outcome can 
 P("**How we measured performance.** Each ball is credited with how much it changed the batting side's chance of winning: a boundary in a tight chase earns the batter a lot, and a dot ball at the same moment earns the bowler credit. Half the credit is what actually happened; the other half is a standard mark for that outcome in that kind of situation, so nobody gains from the luck of which ball a six happened to land on. We allowed for the strength of the opponent and for what had just happened, such as a batter arriving after a run of dots, and we pulled short records towards the average so that a brief hot streak cannot top a list. Players needed 150 pressure balls in 15 matches; 97 batters and 97 bowlers qualified.", size=SZ)
 P(f"**The rating.** It has two parts: what a player is worth per pressure ball, and how rarely they lose one. Batters are weighted {LB * 100:.0f}% and {CB * 100:.0f}%, bowlers {LW * 100:.0f}% and {CW * 100:.0f}%, because those weights best predicted performance in matches held back from the calculation. We repeated everything with three different models of the chance of winning and averaged the three results.", size=SZ)
 P(f"**What we found.** No player's ability to raise their game under pressure can be told apart from luck in this data: the gaps between players' pressure and usual performance are no bigger than random reshuffling produces. The lists therefore rank the players worth most when the pressure is on. Mostly they are excellent players who keep performing in those moments.", size=SZ)
-P(f"**How sure we are.** Ratings built from two random halves of the matches agree at {S['bat_rel']['score']:.2f} for batters and {S['bowl_rel']['score']:.2f} for bowlers, on a scale where 0 is pure luck and 1 is perfect agreement. Section 6 shows how secure each place is and which players come next.", size=SZ)
+P(f"**How sure we are.** Ratings built from two random halves of the matches agree at {S['bat_rel']['score']:.2f} for batters and {S['bowl_rel']['score']:.2f} for bowlers, on a scale where 0 is pure luck and 1 is perfect agreement. A stricter test that refits every step on each half separately gives {LF['bat']['mean']['repeatable']:.2f} and {LF['bowl']['mean']['repeatable']:.2f}; the true figure lies between the two (7.3). Section 6 shows how secure each place is and which players come next.", size=SZ)
+P("**How Rajasthan Royals can use it.** Section 8 reads each player's rating alongside the role their evidence supports and how sure we can be, works through two close selection choices, and places Rajasthan Royals' own 2026 squad in both lists.", size=SZ)
+
+# ============ How the report answers the brief
+doc.add_heading("How this report answers the brief", 1).paragraph_format.page_break_before = True
+T(pd.DataFrame({'The brief asks for': ['Pressure definition: the situations and indicators used, and why', 'Performance measurement: batting and bowling metrics, player baselines, rating logic',
+                                       'Fair comparisons: sample sizes, eligibility, match contexts, IPL and T20I data', 'Evidence for the top 10: results, comparisons, tables, charts',
+                                       'Reliability and limitations: consistency across matches, where the model is less certain', 'A method someone else can understand and reproduce',
+                                       'Rankings supported by the supplied data, not reputation'],
+                'Where we answer it': ['Section 3: leverage from a win-probability model (3.1 to 3.4), with the table of indicators in 3.1; squeeze (3.5); match importance (3.6)',
+                                       "Section 4: ball value (4.1), the Pressure Exam (4.2), each player's usual level as the baseline (4.3), the rating (4.4, 4.5), what each part adds (4.6)",
+                                       'Section 5, with shrinkage (4.4) and the opponent adjustment',
+                                       'Section 6: both lists with every component, conventional statistics, firm and contested places, head-to-head odds, phase and opponent splits',
+                                       'Section 7: resampling and rating intervals (7.1), unseen matches (7.2), leakage audit (7.3), held-out season and competition (7.4), clutch (7.5), limitations (7.6)',
+                                       'Section 9 and github.com/Simhaatt/rr; Appendix C traces one player from raw balls to final rating; Appendix D answers likely questions',
+                                       'Every figure comes from the six supplied files; Section 8 shows how the ratings can inform a selection decision']}), widths=[6.0, 11.0], size=8.5)
+F('f13_flowchart', "The method at a glance. Each step is described in the section the table above names.", 14.5)
 
 # ============ 2. Data
 doc.add_heading("2. Data and preparation", 1).paragraph_format.page_break_before = True
 P(f"We used all six supplied files. The pack holds {S['matches_total']} matches: IPL 2022 to 2026, T20 internationals from January 2022 to November 2026, and two A-team Asia Cup events. Of these, {S['matches_with_bbb']} have ball-by-ball records, and we analysed {S['matches_used']} of them ({S['ipl_matches']} IPL, {S['intl_matches']} international; {S['balls_used']:,} deliveries).")
 P(f"We left out {S['dls_excluded']} matches revised by Duckworth-Lewis-Stern, because a revised target makes the state of an innings ambiguous, and 30 matches that were abandoned, ended without a result or have incomplete records. We dropped super overs (innings 3 and 4) and kept the regulation play of tied matches.")
-P("The extras column marks illegal deliveries as wide, Overstep or 'other'. We checked that 'other' means a no-ball: counting all three as illegal makes 31,757 of 32,338 overs exactly six balls long, and the rest are overs that were never finished.")
+P("The extras column marks illegal deliveries as wide, Overstep or 'other'. We checked that 'other' means a no-ball: counting all three as illegal makes 31,757 of 32,338 overs exactly six balls long. All but one of the rest are overs that were never finished; the exception has seven legal balls, an umpire's miscount that the data records as bowled.")
 P("From the delivery log we rebuilt the state before every ball: legal balls left, runs, wickets lost and, in a chase, runs still needed. The rebuilt totals give the recorded winner in all 794 decided, untied matches.")
 P("Scoring rose sharply over the period, so the model also receives a par score: the mean first-innings total for the competition and year. Par rose from 171 in IPL 2022 to 196 in IPL 2026 and ranged from 166 to 180 in internationals. A total of 180 means something different in each.")
 
@@ -194,6 +212,25 @@ B(f"Pressure balls carry three times the stakes: {pv.loc[swing, 'Pressure']:.1f}
 B(f"The share of pressure balls follows the closeness of the result: {pcs['Chase won in final over']:.0f}% of balls in chases won in the final over and {pcs['Defended by 10 or fewer']:.0f}% in totals defended by ten runs or fewer, against {pcs['Chase won with 19+ balls left']:.0f}% in chases won with 19 or more balls to spare and {pcs['Defended by 31+']:.0f}% in wins by 31 runs or more.")
 B(f"Pressure balls come from every phase but one. The first-innings powerplay supplies {pc(c['inn1_PP'])} and the first-innings death {pc(c['inn1_DEATH'])}; the chase supplies {pc(c['inn2_PP'])} in the powerplay, {pc(c['inn2_MID'])} in the middle overs and {pc(c['inn2_DEATH'])} at the death. No middle-overs ball of a first innings reaches the threshold, because a single ball changes least then.")
 P("The same ball is a pressure ball for striker and bowler alike, so one definition serves both lists.")
+P("Sensitivity to the pressure bar", bold=True)
+_thr_rows = []; _thr_corr = []; _thr_moved = set()
+for _lab, _sfx in (('Top 33% of balls', 'pct0.67'), ('Top 20% of balls', 'pct0.80')):
+    _r = {'Pressure bar': _lab}
+    for _role, _rn in (('bat', 'Batters'), ('bowl', 'Bowlers')):
+        _cs = [pd.read_csv(f"{d}/{_role}_ratings_eligible_{_sfx}.csv", index_col=0) for d in (OUT, OUT + '_alt', OUT + '_gbm')]
+        _sc = pd.concat([c.score for c in _cs], axis=1).mean(axis=1).dropna(); _nm = pd.concat([c.name for c in _cs]).groupby(level=0).first()   # average of the models that rate the player
+        _base = CON[_role].sort_values('rank_c'); _b10 = list(_base.index[:10]); _t10 = list(_sc.sort_values(ascending=False).index[:10])
+        _cm = _sc.index.intersection(_base.index)
+        _out = [_base.name[p] for p in _b10 if p not in _t10]; _in = [_nm[p] for p in _t10 if p not in _b10]
+        _thr_moved |= set(_out)
+        _r[f'{_rn}: same names'] = f"{10 - len(_out)} of 10"
+        _r[f'{_rn}: who moves'] = 'nobody' if not _out else f"{', '.join(_out)} out; {', '.join(_in)} in"
+        _thr_corr.append(np.corrcoef(_sc[_cm], _base.score_c[_cm])[0, 1]); _r[f'{_rn}: rating corr.'] = f"{_thr_corr[-1]:.2f}"
+    _thr_rows.append(_r)
+T(pd.DataFrame(_thr_rows), widths=[2.6, 1.6, 4.0, 1.4, 1.6, 4.0, 1.4], size=7.5)
+_thr_cont = [n for n in _thr_moved if n in set(bat[bat.tier == 'Contested'].name) | set(bowl[bowl.tier == 'Contested'].name)]
+_mv = sorted(_thr_moved); _allc = len(_thr_cont) == len(_mv)
+P(f"Widening the bar to the top third of balls, or narrowing it to the top fifth, leaves the ratings almost unchanged (correlation {min(_thr_corr):.2f} or higher with the final rating). " + (f"The only players who leave a list, {andj(_mv)}, hold contested places in Section 6, so the exact bar decides some contested places but none of the firm ones." if _allc else f"The players who leave a list are {andj(_mv)}; {num(len(_thr_cont)).lower()} of them hold contested places in Section 6."), size=9.5)
 F('f3_example_match', f"Figure 3. Worked example: the most leveraged close finish in the data. {pc(S['example']['press_share'])} of this match's deliveries are pressure balls, almost all of them in the chase.", 15)
 
 doc.add_heading("3.5 A second kind of pressure: squeeze", 2)
@@ -219,6 +256,15 @@ B("Wides count against the bowler only. A run-out of the non-striker does not co
 B("We split each ball's value into a **run component**, for the runs scored and the ball used, and a **wicket component**, for the extra cost of a dismissal. The two behave very differently from one sample to the next (4.4).")
 B("A player's rate on a set of balls is their total value divided by the total leverage of those balls. Dividing by leverage puts pressure and ordinary balls on one scale. We quote rates as **win-probability points added per 100 balls of average leverage**, with 0 as the average player.")
 B("We compare every ball with what the average player does on the same kind of ball (pressure or ordinary, in the same squeeze state; 3.5), so no player is judged against a standard that the situation put out of reach.")
+DS = json.load(open(f"{OUT}/decision_summary.json"))
+P("Three real deliveries show the arithmetic:", bold=True)
+_ex = DS['examples']
+T(pd.DataFrame({'Delivery': [e['label'] for e in _ex], 'Match': [f"{e['match']}, {e['comp']}, {e['date']}" for e in _ex],
+                'Situation': [(f"{e['score']}, {e['runs_needed']} needed off {e['balls_left']} {'ball' if e['balls_left'] == 1 else 'balls'}" if e['innings'] == 2 else f"{e['score']}, {e['balls_left']} balls left") for e in _ex],
+                'What happened': [f"{e['striker']} v {e['bowler']}: {e['outcome']}" for e in _ex],
+                "Batting side's chance of winning": [f"{e['wp_pre']:.0f}% to {e['wp_post']:.0f}%" for e in _ex], 'Stakes': [f"{e['leverage']:.1f}" for e in _ex],
+                'Batter / bowler value': [f"{e['batter_value']:+.0f} / {e['bowler_value']:+.0f}" for e in _ex]}), widths=[2.4, 3.6, 2.6, 3.2, 2.2, 1.3, 1.9], size=7.5)
+P("Values are in win-probability points, as they happened, before the exam blend and the opponent adjustment. 'Stakes' is the leverage of the ball (1 = an average ball). The same outcome would be worth far less with more balls left: the last-ball four carried thirty times the stakes of an average ball.", size=9.5)
 doc.add_heading("4.2 The Pressure Exam: every player sits the same paper", 2)
 P("Win probability added has one weakness as a measure of a player. Take two batters who each hit a six, a four, three singles and a dot under pressure. Their totals can differ widely, because one six landed on a ball where it was worth 4 points and the other on a ball where it was worth 12. A batter rarely chooses which ball that is, and this timing luck makes up much of the noise in any 'clutch' statistic.")
 P(f"The win-probability model can price every possible outcome of every ball, not only the one that happened, so we use it to set a standard paper. We group deliveries into {S['exam_strata']} kinds of situation (pressure or ordinary; innings; powerplay, middle or death overs; and 0-2, 3-5 or 6+ wickets down). Within each kind, every outcome gets a single mark: its average worth per unit of leverage across all balls of that kind. A player's **exam value** for a ball is the mark for the outcome they produced.")
@@ -236,7 +282,7 @@ rel = pd.DataFrame({'Quantity': ['Overall level (all balls), run component', 'Ov
                     'Batters: weight kept': [pc(S['bat_mean_rel'][k_]) for k_ in ('R_rA_rel', 'K_rA_rel', 'up_tot_rel')],
                     'Bowlers: weight kept': [pc(S['bowl_mean_rel'][k_]) for k_ in ('R_rA_rel', 'K_rA_rel', 'up_tot_rel')]})
 T(rel, widths=[7, 4, 4])
-P(f"Average share of each player's own measurement that survives shrinkage. Shrinkage keeps {pc(S['bat_mean_rel']['R_rA_rel'])} of a batter's overall run value but only {pc(S['bat_mean_rel']['up_tot_rel'])} of a batter's uplift and {pc(S['bowl_mean_rel']['up_tot_rel'])} of a bowler's, and the clutch test of 7.4 suggests that even this is generous. We shrink uplift as a whole, because the errors in its run and wicket parts are not independent.", italic=True, size=8.5)
+P(f"Average share of each player's own measurement that survives shrinkage. Shrinkage keeps {pc(S['bat_mean_rel']['R_rA_rel'])} of a batter's overall run value but only {pc(S['bat_mean_rel']['up_tot_rel'])} of a batter's uplift and {pc(S['bowl_mean_rel']['up_tot_rel'])} of a bowler's, and the clutch test of 7.5 suggests that even this is generous. We shrink uplift as a whole, because the errors in its run and wicket parts are not independent.", italic=True, size=8.5)
 P("The rating has two parts.", bold=True)
 B(f"**Level ({pcw(LB)} for batters, {pcw(LW)} for bowlers)** is our best estimate of what a player is worth per pressure ball. It starts from the player's shrunk level on all their balls, the most reliable thing we know about them, and adds the share of their shrunk uplift that this overall level does not already contain: Level = overall level + (1 - pressure share) x uplift, where the pressure share is the fraction of the player's balls that were pressure balls (those balls are already inside the overall level). Moving away from a player's own record only as far as the pressure evidence allows is how the rating compares each player with their usual performance.")
 B(f"**Consistency ({pcw(CB)} for batters, {pcw(CW)} for bowlers)** measures how rarely a player loses a pressure ball. A ball counts as not lost when its value to the player, after the exam blend and the opposition adjustment, is zero or better. We compare each player's share with the average for the same kind of ball (pressure, squeeze state, innings, phase and wickets down) and shrink it by sample size, with a prior worth about {S['bat_KCB']:.0f} balls for batters and {S['bowl_KCB']:.0f} for bowlers. We count balls rather than matches because a player has about ten times as many pressure balls as matches, so the measure rests on far more evidence (Appendix A.1).")
@@ -248,6 +294,25 @@ P("Every step above depends on the win-probability model, and no model is exactl
 _m = 'Main (blend)'; rbm = CON['robust_main']; rbc = S['robust']
 keep_b = lambda rb: np.mean([r[3] / max(r[2], 1) for r in rb]) * 100; keep_w = lambda rb: np.mean([r[8] / max(r[7], 1) for r in rb]) * 100
 P("A place counts as firm only when all three models put the player in the top 10 (Section 6). Appendix A.3 compares the three models and their reliability.")
+
+doc.add_heading("4.6 What each part of the method adds", 2)
+_dt = {r[0]: r for r in S['design_tests']['rows']}; _r3 = {r[0]: r for r in S['design_tests']['round3']}
+_ws = json.load(open(f"{OUT}/weights_summary.json"))
+_pv = pd.DataFrame(S['press_vs_ord']); _sw = 'Mean |win-prob swing| per ball (pts)'; _pcs = S['press_by_close']
+T(pd.DataFrame({'Component': ['Leverage', 'Pressure Exam (half weight)', 'Squeeze adjustment', 'Opponent adjustment', 'Match-ups and ball-level consistency', 'Shrinkage', 'Consistency', 'Fitted weights', 'Light knockout weight', 'Three-model average'],
+                'What it does': ['Picks out the balls that can change the result', 'Removes the luck of which ball a boundary or wicket fell on', 'Compares each ball with the same state of recent dots, wickets or boundaries',
+                                 'Removes the quality of the batter or bowler at the other end', 'Opponent quality by type; consistency counted per ball, not per match', 'Pulls short, noisy records towards the average',
+                                 'Rewards players who rarely lose a pressure ball', 'Balances Level and Consistency for each list', 'Gives finals and playoffs a little more weight', 'Averages three win-probability models'],
+                'Evidence': [f"Pressure balls carry {_pv.loc[_sw, 'Pressure'] / _pv.loc[_sw, 'Ordinary']:.1f} times the stakes of ordinary balls at the same run and wicket rates; {_pcs['Chase won in final over']:.0f}% of balls in last-over chases against {_pcs['Chase won with 19+ balls left']:.0f}% in easy ones (3.4)",
+                             f"Batters' repeatability {_dt['Previous version'][1]:.2f} to {_dt['Exam blended 50/50 with actual impact'][1]:.2f} with the blend (A.1)",
+                             f"The same batter is worth {abs(S['squeeze']['bat']['effect']):.0f} points per 100 balls less when squeezed (3.5); with the blend, the adopted design (A.1)",
+                             'Reorders players without changing any of the twenty names (7.2)',
+                             f"Bowlers' repeatability {_r3['Before this round'][4]:.2f} to {_r3['Match-up + ball-level consistency'][4]:.2f}, batters' {_r3['Before this round'][1]:.2f} to {_r3['Match-up + ball-level consistency'][1]:.2f}: the largest single gain (A.1)",
+                             f"A player's own raw pressure record predicts unseen matches at {S['bat_rel']['pred_rawP_to_rawP']:.2f} (batters) and {S['bowl_rel']['pred_rawP_to_rawP']:.2f} (bowlers); the shrunk Level at {S['bat_rel']['pred_level_to_rawP']:.2f} and {S['bowl_rel']['pred_level_to_rawP']:.2f} (7.2)",
+                             f"Lifts the bowling rating's prediction of unseen matches to {S['bowl_rel']['pred_score_to_rawP']:.2f}, against {S['bowl_rel']['pred_convA_to_rawP']:.2f} for economy rate (7.2); in the leakage-free test the edge is {LF['bowl']['diff']['overall SR/econ']['mean']:+.2f}, ahead in {pc(LF['bowl']['diff']['overall SR/econ']['share_rating_ahead'])} of splits (7.3)",
+                             f"Predict unseen matches at {_ws['bat']['results']['Learned on unseen matches (cross-fitted)']:.2f} and {_ws['bowl']['results']['Learned on unseen matches (cross-fitted)']:.2f}, against {_ws['bat']['results']['Brief 50/25/25']:.2f} and {_ws['bowl']['results']['Brief 50/25/25']:.2f} for the brief's 50/25/25 (A.4)",
+                             'Moves every test by 0.01 or less; heavier weights hurt (A.2)', 'No gain in accuracy; no single modelling choice decides a close place, and it defines firm places (A.3)']}),
+  widths=[3.4, 5.6, 8.0], size=7.5)
 
 # ============ 5. Fairness
 doc.add_heading("5. Fair comparisons", 1)
@@ -372,7 +437,7 @@ B(f"**Rating intervals.** Figure 9 and the tables below give each player's ratin
 F('f12_rating_intervals', "Figure 9. Final rating (dot) and its 90% interval over 500 match resamples, averaged over the three win-probability models, for the top 15 in each list. Pink marks the top 10; the dashed line is the top-10 cut.", 16)
 for _role, _lab in (('bat', 'Batter'), ('bowl', 'Bowler')):
     _r = IV[_role][:10]
-    T(pd.DataFrame({'#': [r['rank'] for r in _r], _lab: [r['name'] for r in _r], 'Rating (90% interval)': [f"{r['rating']:.2f} ({r['lo']:.2f} to {r['hi']:.2f})" for r in _r],
+    T(pd.DataFrame({'#': [r['rank'] for r in _r], _lab: [r['name'] for r in _r], 'Rating (90% interval)': [f"{r['rating']:.2f} ({round(r['lo'], 2) + 0:.2f} to {r['hi']:.2f})" for r in _r],
                     'Gap to next (90% interval)': [f"{r['gap']:.2f} ({r['gap_lo']:+.2f} to {r['gap_hi']:+.2f})" for r in _r], 'Ahead of next': [pc(r['ahead']) for r in _r],
                     'Above the 11th': [pc(r['beats_11th']) for r in _r]}), widths=[0.8, 4.2, 3.8, 3.8, 2.0, 2.2], size=8)
 B(f"**Split halves.** We also split the matches at random into two halves 100 times and reran the whole method on each half. The two halves' ratings correlate (0 means no relation, 1 means identical rankings) {br['score']:.2f} for batters and {wr['score']:.2f} for bowlers, which implies a full-sample reliability of about {sb(br['score']):.2f} and {sb(wr['score']):.2f}. Figure 10 breaks this down by ingredient.")
@@ -392,7 +457,7 @@ doc.add_heading("7.2 Predicting matches the rating has not seen", 2)
 P("This is the strictest test the data allows. In each of 100 random splits we computed every measure on one half of the matches and compared it with the win probability each player actually added on pressure balls in the other half, adjusted for the opponent. Conventional statistics sat the same test.")
 F('f9_out_of_sample', "Figure 11. Correlation between each measure in one half of the matches and actual pressure value in the other half.", 16)
 B(f"**Shrinkage and anchoring help.** A player's own raw pressure record predicts the unseen half at {br['pred_rawP_to_rawP']:.2f} for batters and {wr['pred_rawP_to_rawP']:.2f} for bowlers. Level, built from the same half, reaches {br['pred_level_to_rawP']:.2f} and {wr['pred_level_to_rawP']:.2f}, and the final rating {br['pred_score_to_rawP']:.2f} and {wr['pred_score_to_rawP']:.2f}.")
-B(f"**For bowlers, the rating beats economy rate.** Pressure economy scores {wr['pred_convP_to_rawP']:.2f} and overall economy {wr['pred_convA_to_rawP']:.2f}, against {wr['pred_score_to_rawP']:.2f} for the rating. Consistency supplies most of that gain.")
+B(f"**For bowlers, the rating predicts better than economy rate.** Pressure economy scores {wr['pred_convP_to_rawP']:.2f} and overall economy {wr['pred_convA_to_rawP']:.2f}, against {wr['pred_score_to_rawP']:.2f} for the rating. Consistency supplies most of that gain. In the stricter leakage-free test of 7.3 the edge shrinks to {LF['bowl']['diff']['overall SR/econ']['mean']:+.2f}, and the rating is ahead in {pc(LF['bowl']['diff']['overall SR/econ']['share_rating_ahead'])} of splits.")
 B(f"**For batters, plain strike rate predicts as well as the rating.** Overall strike rate scores {br['pred_convA_to_rawP']:.2f} and pressure strike rate {br['pred_convP_to_rawP']:.2f}, against {br['pred_score_to_rawP']:.2f}. With 97 players these differences lie within sampling error, and they point one way: batting under pressure is mostly general scoring ability carrying over. The rating adds a fairer account, with dismissals, match situation and opposition priced in.")
 def sens_txt(role, tab):
     lists = [set(v) for v in S[f'{role}_sens'].values()]
@@ -409,9 +474,36 @@ B(f"**Other weightings.** We re-ranked under eight weightings of level, uplift a
 nb = set(bat.sort_values('rank_main').name.head(10)) - set(S['bat_top10_noadj']); nw = set(bowl.sort_values('rank_main').name.head(10)) - set(S['bowl_top10_noadj'])
 B("**Opponent adjustment.** " + ("Removing it from the main model changes none of the twenty names; it reorders players without deciding who is in." if not nb and not nw else f"Removing it from the main model changes {len(nb)} of 10 batters ({', '.join(sorted(nb)) or 'none'}) and {len(nw)} of 10 bowlers ({', '.join(sorted(nw)) or 'none'})."))
 
-doc.add_heading("7.3 A held-out season and a held-out competition", 2)
+doc.add_heading("7.3 Leakage audit, and a fair comparison with strike rate and economy", 2)
+LF = json.load(open(f"{OUT}/leakfree_summary.json"))
+P("A held-out test is only fair if nothing from the held-out matches reaches the rating being tested. We checked every step of the pipeline:")
+T(pd.DataFrame({'Step': ['Win-probability model', 'Opponent quality and match-ups', 'Average for the same kind of ball; exam marks', 'Shrinkage and standardisation', 'Eligibility', 'Rating weights', 'Resampling'],
+                'How it is fitted': ['Five groups of matches, each predicted by a model fitted on the other four', 'All matches in the split-half tests of 7.1 and 7.2; training matches only in the tests of 7.4',
+                                     'All matches in the split-half tests; training matches only in 7.4', 'Refitted on each half', 'Ball counts on all matches', 'Fitted on some splits, judged on others (A.4)', 'Whole matches, never single balls'],
+                'Verdict': ['Clean: no match predicts itself, and the model never sees who is batting or bowling', 'Shares information between halves: measured below', 'Shares information between halves: measured below', 'Clean',
+                            'Uses ball counts, never outcomes', 'Clean within each test; like every design choice, chosen with all five seasons in view', 'Clean: balls from one match are never split up']}), widths=[4.0, 6.5, 6.5], size=7.5)
+_m = 'Main (blend)'
+P(f"To measure the shared information, we reran the split-half test on {LF['bat']['nsplit']} fresh splits with every step, the opponent adjustment and the exam marks included, refitted on each half alone. The actual pressure value being predicted was also computed from its own half alone.")
+_lf = lambda r, k: LF[r]['mean'][k]
+T(pd.DataFrame({'Test': ['Rating agrees between halves', 'Rating predicts actual pressure value in the other half'],
+                'Batters: standard test': [f"{cs_['bat']['rel_models'][_m]:.2f}", f"{cs_['bat']['pred_models'][_m]:.2f}"], 'Batters: leakage-free': [f"{_lf('bat', 'repeatable'):.2f}", f"{_lf('bat', 'rating'):.2f}"],
+                'Bowlers: standard test': [f"{cs_['bowl']['rel_models'][_m]:.2f}", f"{cs_['bowl']['pred_models'][_m]:.2f}"], 'Bowlers: leakage-free': [f"{_lf('bowl', 'repeatable'):.2f}", f"{_lf('bowl', 'rating'):.2f}"]}),
+  widths=[6.0, 2.7, 2.7, 2.7, 2.7], size=8)
+_drop = max(cs_[r]['pred_models'][_m] - _lf(r, 'rating') for r in ('bat', 'bowl')); _dropr = max(cs_[r]['rel_models'][_m] - _lf(r, 'repeatable') for r in ('bat', 'bowl'))
+P(f"Refitting everything on each half lowers the figures by at most {max(_drop, _dropr):.2f}. " + ("The leak is small: the conclusions of 7.1 and 7.2 stand, and the leakage-free figures are the ones to quote as fully out of sample." if max(_drop, _dropr) <= 0.06 else "The standard tests therefore flatter the rating somewhat; the leakage-free figures are the ones to quote as fully out of sample.") + " The season and competition tests of 7.4 were clean from the start, because their reruns drop the held-out matches before anything is fitted.")
+P("The same runs give a paired comparison with conventional statistics. In each split the rating and the conventional measure are built on the same half and judged against the same other half, so their difference is a fair contest. The table gives the average difference in predictive correlation, the range that holds the middle 90% of splits, and the share of splits in which the rating predicts better.")
+_lab = {'own record': "Player's own raw pressure record", 'overall SR/econ': 'Overall strike rate (batters) or economy (bowlers)', 'pressure SR/econ': 'Pressure strike rate or pressure economy'}
+_d = lambda r, k: LF[r]['diff'][k]
+T(pd.DataFrame({'Rating against': [_lab[k] for k in _lab],
+                'Batters: difference (90% range)': [f"{_d('bat', k)['mean']:+.2f} ({_d('bat', k)['lo']:+.2f} to {_d('bat', k)['hi']:+.2f})" for k in _lab], 'Batters: rating ahead': [pc(_d('bat', k)['share_rating_ahead']) for k in _lab],
+                'Bowlers: difference (90% range)': [f"{_d('bowl', k)['mean']:+.2f} ({_d('bowl', k)['lo']:+.2f} to {_d('bowl', k)['hi']:+.2f})" for k in _lab], 'Bowlers: rating ahead': [pc(_d('bowl', k)['share_rating_ahead']) for k in _lab]}),
+  widths=[5.4, 3.4, 1.9, 3.4, 1.9], size=8)
+_vd = lambda r, k: ('clearly better' if _d(r, k)['lo'] > 0 else 'clearly worse' if _d(r, k)['hi'] < 0 else ('better in most splits but not in all' if _d(r, k)['share_rating_ahead'] >= 0.7 else 'not distinguishable'))
+P(f"Against a player's own raw pressure record, the rating is {_vd('bat', 'own record')} for batters and {_vd('bowl', 'own record')} for bowlers. Against economy rate, the bowling rating is {_vd('bowl', 'overall SR/econ')}. Against strike rate, the batting rating is {_vd('bat', 'overall SR/econ')}: batting under pressure is mostly general scoring ability, and we do not claim the batting rating predicts better than strike rate. What it adds is a fairer account of the same ability, with dismissals, the match situation, the opposition and the uncertainty all priced in.")
+
+doc.add_heading("7.4 A held-out season and a held-out competition", 2)
 EX = json.load(open(f"{OUT}/external_summary.json"))
-P(f"Split halves mix every season and competition into both halves. A harder test leaves one out entirely. We rebuilt the whole rating without 2026 and scored it against what players did in 2026, and rebuilt it on IPL matches alone (or internationals alone) and scored it on the other competition. The yardstick is the one in 7.2, counted for players with at least {EX['MINB']} pressure balls in the held-out data; each figure is a correlation with its 90% interval.")
+P(f"Split halves mix every season and competition into both halves. A harder test leaves one out entirely. We rebuilt the whole rating without 2026 and scored it against what players did in 2026, and rebuilt it on IPL matches alone (or internationals alone) and scored it on the other competition. The yardstick is the one in 7.2 and 7.3, counted for players with at least {EX['MINB']} pressure balls in the held-out data; each figure is a correlation with its 90% interval.")
 _cv = lambda role: 'Strike rate' if role == 'bat' else 'Economy (lower is better)'
 _f = lambda v: f"{v['r']:.2f} ({v['lo']:+.2f} to {v['hi']:+.2f})"
 _tests = (('season_2026', 'Built on 2022-2025, tested on 2026'), ('ipl_to_intl', 'Built on IPL, tested on internationals'), ('intl_to_ipl', 'Built on internationals, tested on IPL'))
@@ -424,11 +516,11 @@ P(f"Across competitions the rating carries over well: built on one, it predicts 
   f"For 2026, the bowling rating predicts at {_s['bowl']['rows']['Our rating']['r']:.2f}, and {_s['bowl']['top10_above_avg']} of the {_s['bowl']['top10_scored']} top-10 bowlers who played enough in 2026 beat the average bowler there ({_s['bowl']['top10_mean']:+.0f} against {_s['bowl']['rest_mean']:+.0f} points per 100 balls); plain economy did slightly better that season ({_s['bowl']['rows'][_cv('bowl')]['r']:.2f}). "
   f"For 2026 batters the test cannot separate anything from noise: {_s['bat']['n_players']} batters with 30 to 100 pressure balls each give a correlation of {_s['bat']['rows']['Our rating']['r']:.2f} for the rating and {_s['bat']['rows']['Strike rate']['r']:.2f} for strike rate, both with intervals that include zero. Our top-10 batters still averaged {_s['bat']['top10_mean']:+.0f} points per 100 pressure balls in 2026 against {_s['bat']['rest_mean']:+.0f} for the rest. One season is too short a window to validate batting under pressure, which is why the rating uses all five.")
 
-doc.add_heading("7.4 Is there such a thing as clutch?", 2)
+doc.add_heading("7.5 Is there such a thing as clutch?", 2)
 P(f"We tested whether any player truly raises their game under pressure by shuffling which of each player's balls count as pressure balls, 400 times. If some players rose under pressure, the real gaps between players' pressure and usual performance would be wider than the shuffled ones. They are not (p = {S['checks']['bat_perm']['p_spread']:.2f} for batters and {S['checks']['bowl_perm']['p_spread']:.2f} for bowlers; a p-value is the chance of a result this large from luck alone, and only values below 0.05 suggest a real effect). The same test found planted clutch differences most of the time, so any real clutch skill is smaller than the differences in overall quality between players. The lists therefore rank the players worth most in pressure situations, not the players who rise to them, and uplift carries no separate weight. Appendix A.6 gives the details.")
 
-doc.add_heading("7.5 Where the method is less certain", 2)
-B(f"**Noise.** With 150 to 800 pressure balls per player, and a wicket worth many runs in win-probability terms, a full-sample reliability of about {sb(br['score']):.2f} for batters and {sb(wr['score']):.2f} for bowlers is what the data supports. The lists show the players who delivered most reliably under pressure in 2022 to 2026, once luck is discounted as far as the sample allows; they are not a forecast.")
+doc.add_heading("7.6 Where the method is less certain", 2)
+B(f"**Noise.** With 150 to 800 pressure balls per player, and a wicket worth many runs in win-probability terms, a full-sample reliability of about {sb(LF['bat']['mean']['repeatable']):.2f} to {sb(br['score']):.2f} for batters and {sb(LF['bowl']['mean']['repeatable']):.2f} to {sb(wr['score']):.2f} for bowlers is what the data supports (the lower figures come from the leakage-free test of 7.3). The lists show the players who delivered most reliably under pressure in 2022 to 2026, once luck is discounted as far as the sample allows; they are not a forecast.")
 B("**Uplift.** It barely repeats between halves of the matches in either list, which is why it carries no separate weight; it still enters through Level.")
 B(f"**The exam.** It prices each outcome at its average worth within one of {S['exam_strata']} kinds of situation and ignores finer differences in match state, which is why it gets half the weight, not all.")
 B("**Match importance.** The three knockout weights reflect our judgement of how big each kind of match is. The data shows how much weight is affordable, not which final matters more, and the pack has no World Cup.")
@@ -440,12 +532,67 @@ B("**Excluded matches.** Leaving out rain-revised matches removes some tense fin
 B("**Eligibility.** We do not rate players below 150 pressure balls, however good their record. A lower bar would add names whose rank ranges are too wide to defend.")
 B("**Process against outcome.** The rating judges outcomes. Process measures, such as false-shot and control percentages, ball-tracking expected runs and wickets, and how precisely a bowler hit the intended length, would probably settle faster than outcomes and separate skill from luck more cleanly. The pack records only the type of shot played and the type of delivery bowled, with no edges, misses, ball-tracking or fielding chances; we tested shot and delivery types as predictors and they did not help (Appendix A.5).")
 
-# ============ 8. Reproduce
-doc.add_heading("8. Reproducing the results", 1)
+# ============ 8. Decision support
+doc.add_heading("8. Using the ratings in selection", 1)
+P("The two lists answer the brief's question. A selection meeting needs three further answers for each player: how much they are worth under pressure, in which role, and how sure we can be. Everything below is read from results already shown; nothing is re-estimated.")
+doc.add_heading("8.1 Three questions for each player", 2)
+B("**Performance:** the rating, with Level and Consistency behind it (Sections 4 and 6).")
+B("**Role:** value by phase and by type of opponent (6.3). We name a player's best-supported phase only from splits of at least 100 pressure balls, and ignore splits under 40.")
+B("**Evidence:** pressure balls, the 90% rating interval and the share of resamples in the top 10 (7.1). We use the tiers already defined: **strong evidence** for firm places; **promising** for contested places, and for anyone outside the ten who makes it in at least a quarter of resamples; **insufficient** for players under 150 pressure balls, who are not rated.")
+F('f14_rating_reliability', "Figure 12. Final rating against the share of 500 resamples in which the player makes the top 10. The dashed line is the 60% bar for a firm place; the dotted line is the rating of the 10th-placed player. Players to the right of the dashed line hold the strongest evidence.", 16)
+doc.add_heading("8.2 Role fit for the top 10", 2)
+_fmt = lambda v: '-' if not v else f"{v[0]:+.0f} ({v[1]})"
+def _best(r, keys):
+    c = [(k, r['splits'][k]) for k in keys if k in r['splits'] and r['splits'][k][1] >= 100]
+    return max(c, key=lambda kv: kv[1][0]) if c else None
+for _role, _lab, _ok in (('bat', 'Batter', ('v pace', 'v spin')), ('bowl', 'Bowler', ('v left-handers', 'v right-handers'))):
+    _rows = [r for r in DS[_role] if r['rank'] <= 10]
+    T(pd.DataFrame({'#': [r['rank'] for r in _rows], _lab: [r['name'] for r in _rows],
+                    'Best-supported phase': [(f"{r['role_fit']} {_fmt(r['role_fit_value'])}" if r['role_fit'] else 'none with 100+ balls') for r in _rows],
+                    'Death overs': [_fmt(r['splits'].get('Death')) for r in _rows],
+                    'Stronger against': [(f"{_best(r, _ok)[0]} {_fmt(_best(r, _ok)[1])}" if _best(r, _ok) else '-') for r in _rows],
+                    'Rating (90% interval)': [f"{r['rating']:.2f} ({round(r['lo'], 2) + 0:.2f} to {r['hi']:.2f})" for r in _rows],
+                    'Evidence': ['Strong' if r['tier'] == 'Firm' else 'Promising' for r in _rows]}), widths=[0.7, 3.6, 3.6, 2.2, 3.2, 2.8, 1.6], size=7.5)
+P("Value per 100 pressure balls, with the number of pressure balls in brackets.", italic=True, size=8.5)
+_thin = [r['name'] for r in DS['bat'] if r['rank'] <= 10 and r['splits'].get('Death', [0, 0])[1] < 40]
+_dth = [r['name'] for r in DS['bat'] if r['rank'] <= 10 and r['splits'].get('Death', [0, 0])[1] >= 100]
+P(f"The table guards against reading too much into a single number. Only {andj(_dth)} {'has' if len(_dth) == 1 else 'have'} 100 or more pressure balls at the death among our batters; {andj(_thin)} {'has' if len(_thin) == 1 else 'have'} fewer than 40, so their ratings say nothing about finishing an innings. A high rating earned in the powerplay is evidence for an opener, not for a finisher.")
+doc.add_heading("8.3 Two illustrative choices", 2)
+P("The ratings matter most when two near-equal players compete for one role. These are historical comparisons that show how the framework reads the evidence, not predictions of any match.")
+for _dc in DS['decisions']:
+    _a, _c, _ph = _dc['a'], _dc['c'], _dc['phase']
+    _opp = ('v pace', 'v spin')
+    T(pd.DataFrame({'': ['Rank and rating (90% interval)', 'Rates above the other (resamples)', f'{_ph} overs under pressure', 'Against pace', 'Against spin', 'Consistency', 'Pressure balls', 'Evidence'],
+                    _a['name']: [f"{_a['rank']}: {_a['rating']:.2f} ({round(_a['lo'], 2) + 0:.2f} to {_a['hi']:.2f})", pc(_dc['a_ahead']), _fmt(_a['splits'].get(_ph)), _fmt(_a['splits'].get('v pace')), _fmt(_a['splits'].get('v spin')), f"{_a['cons']:+.1f}", _a['n_P'], 'Strong' if _a['tier'] == 'Firm' else 'Promising' if _a['rank'] <= 10 or _a['p_top10'] >= 0.25 else 'Below the cut'],
+                    _c['name']: [f"{_c['rank']}: {_c['rating']:.2f} ({round(_c['lo'], 2) + 0:.2f} to {_c['hi']:.2f})", pc(1 - _dc['a_ahead']), _fmt(_c['splits'].get(_ph)), _fmt(_c['splits'].get('v pace')), _fmt(_c['splits'].get('v spin')), f"{_c['cons']:+.1f}", _c['n_P'], 'Strong' if _c['tier'] == 'Firm' else 'Promising' if _c['rank'] <= 10 or _c['p_top10'] >= 0.25 else 'Below the cut']}),
+      widths=[5.6, 5.6, 5.6], size=8)
+    _pa, _pcv = _a['splits'].get(_ph), _c['splits'].get(_ph)
+    if _ph == 'Middle':
+        P(f"**A middle-overs batter: {_a['name']} or {_c['name']}.** {_a['name'].split()[-1]} rates higher overall and in the middle overs ({_fmt(_pa)} against {_fmt(_pcv)}), on far more pressure balls, and stays ahead in {pc(_dc['a_ahead'])} of resamples. The framework favours {_a['name'].split()[-1]} for the role. {_c['name'].split()[-1]} is the stronger of the two against spin ({_fmt(_c['splits'].get('v spin'))} against {_fmt(_a['splits'].get('v spin'))}), so against an attack built on spin the gap narrows.")
+    else:
+        P(f"**An opener: {_a['name']} or {_c['name']}.** The overall ratings are almost level: {_a['name'].split()[-1]} rates above {_c['name'].split()[-1]} in only {pc(_dc['a_ahead'])} of resamples, a coin toss. The powerplay split is not: {_c['name'].split()[-1]} has added {_fmt(_pcv)} against {_fmt(_pa)} for {_a['name'].split()[-1]}, both on large samples. For an opening role the framework favours {_c['name']}, who is in Rajasthan Royals' 2026 squad.")
+doc.add_heading("8.4 Rajasthan Royals' own players", 2)
+_rr = {_role: [r for r in DS[_role] if r['rr_2026']] for _role in ('bat', 'bowl')}
+P(f"The data pack lists Rajasthan Royals' 2026 squad. {num(len(_rr['bat']))} of its players meet the eligibility bar as batters and {num(len(_rr['bowl'])).lower()} as bowlers. Their ratings cover all their matches in 2022 to 2026, for any team, and rank them among the 97 eligible players in each list:")
+for _role, _lab in (('bat', 'Batter'), ('bowl', 'Bowler')):
+    _rows = _rr[_role]
+    T(pd.DataFrame({_lab: [r['name'] for r in _rows], 'Rank of 97': [r['rank'] for r in _rows], 'Rating (90% interval)': [f"{r['rating']:.2f} ({round(r['lo'], 2) + 0:.2f} to {r['hi']:.2f})" for r in _rows],
+                    'Best-supported phase': [(f"{r['role_fit']} {_fmt(r['role_fit_value'])}" if r['role_fit'] else '-') for r in _rows], 'Pressure balls': [r['n_P'] for r in _rows]}), widths=[4.4, 2.0, 3.8, 4.2, 2.2], size=8)
+_rb = _rr['bat']; _rw = _rr['bowl']
+P(f"Two squad members anchor the batting: {_rb[0]['name']} ranks {ordn(_rb[0]['rank'])} and {_rb[1]['name']} {ordn(_rb[1]['rank'])}. The next squad batter ranks {ordn(_rb[2]['rank'])}. Among bowlers, {_rw[0]['name']} ranks {ordn(_rw[0]['rank'])}; every other squad bowler ranks {ordn(_rw[1]['rank'])} or lower, with ratings below the pool average. On this evidence, pressure bowling is where the squad would gain most from a recruit, and Section 6 lists the bowlers who have delivered most in those moments.")
+doc.add_heading("8.5 How not to use the ratings", 2)
+B("**Not as a forecast.** They describe 2022 to 2026. A rating built on four seasons predicts the fifth only partly (7.4).")
+B("**Not as proof of clutch.** No player's ability to rise under pressure can be told apart from luck (7.5).")
+B("**Not on small splits.** A phase or opponent split under 40 pressure balls is mostly noise.")
+B("**Not without the interval.** Neighbouring players overlap; contested places can swap with near-equal players (6, 7.1).")
+B("**Not as the whole picture.** Fielding, captaincy, fitness and conditions are outside the data.")
+
+# ============ 9. Reproduce
+doc.add_heading("9. Reproducing the results", 1)
 P("**Code: github.com/Simhaatt/rr.** The repository holds every script, the exact library versions (Python 3.14 with pandas 3.1.1, numpy 2.5.4, scikit-learn 1.9.1, scipy 1.18.1, matplotlib 3.11.2 and python-docx 1.2.0, listed in requirements.txt) and a single command that runs the whole method. Put the six supplied CSVs in data_pack/Data Pack/, then run:")
 P("pip install -r requirements.txt", size=9.5).runs[0].font.name = 'Consolas'
 P("python run_all.py", size=9.5).runs[0].font.name = 'Consolas'
-P("The full run takes about an hour on a four-core computer with 8 GB of memory. Random seeds are fixed, so it reproduces every number in this report. The eight steps below describe what the scripts do, so the method can also be rebuilt from this report alone.")
+P("The full run takes about an hour and a half on a four-core computer with 8 GB of memory. Random seeds are fixed, so it reproduces every number in this report, and it ends with automated checks that write a verification file (dataset counts, pressure balls, eligible players, model metrics, final lists, seeds and package versions). The eight steps below describe what the scripts do, so the method can also be rebuilt from this report alone.")
 T(pd.DataFrame({'Step': ['1. Prepare', '2. Win probability', '3. Leverage and pressure', '4. Ball value', '5. Fair comparison', '6. Shrink and rate', '7. Three models', '8. Check'],
                 'What to do': ['Load the six files. Mark wides, oversteps and "other" extras as illegal. Rebuild balls left, runs, wickets and runs needed before every ball. Drop rain-revised, abandoned and incomplete matches and super overs. Compute par for each competition and year (3.2, Section 2).',
                                'Fit the chase and first-innings models in five groups of matches, predicting each group with a model fitted on the other four (3.2).',
@@ -467,7 +614,7 @@ dt = S['design_tests']['rows']
 P("Every candidate faced the same test: 40 random splits of the matches into halves, with the whole method rebuilt on each half. 'Repeatable' is how well the rating from one half agrees with the other; 'predicts' is how well Level from one half matches actual pressure value in the other, always measured on the same yardstick.")
 T(pd.DataFrame({'Design': [r[0] for r in dt], 'Batters: repeatable': [f"{r[1]:.2f}" for r in dt], 'Batters: predicts': [f"{r[2]:.2f}" for r in dt], 'Bowlers: repeatable': [f"{r[4]:.2f}" for r in dt], 'Bowlers: predicts': [f"{r[5]:.2f}" for r in dt],
                 'Verdict': [{'baseline': 'Starting point', 'partly': 'Better for batters only', 'yes': 'Better', 'adopted': 'Adopted', 'mixed': 'Helps bowlers only', 'no gain': 'No gain: not used', 'rejected': 'Rejected'}[r[7]] for r in dt]}), widths=[6.2, 2.0, 2.0, 2.0, 2.0, 3.0], size=8)
-F('f11_design_tests', "Figure 12. The first round of tests as a chart. Pink and navy mark the adopted design; dashed lines mark the previous version.", 16)
+F('f11_design_tests', "Figure 13. The first round of tests as a chart. Pink and navy mark the adopted design; dashed lines mark the previous version.", 16)
 up_ = S['design_tests']['uplift']
 P(f"The first round adopted the exam blend with the squeeze adjustment, which beat the previous version on both measures for both lists by the widest margin. Two ideas failed. A response curve, fitting each player a line for how their value changes as leverage rises, doubled the repeatability of batters' uplift ({up_['binary'][0]:.2f} to {up_['slope'][0]:.2f}) but lowered bowlers' ({up_['binary'][1]:.2f} to {up_['slope'][1]:.2f}) and made the overall rating worse for both. Counting squeezed balls as pressure balls moved neither measure by more than 0.01.")
 r3 = S['design_tests']['round3']
@@ -554,6 +701,45 @@ for nm, t in (('Batters', bat), ('Bowlers', bowl)):
     T(pd.DataFrame({'#': t['rank'].values, 'Player': t.name.values, 'Pressure balls': t.n_P.map(f0).values, 'Usual rate': (t.T_rN * U).map(sgn).values, 'Pressure rate': (t.T_rP * U).map(sgn).values,
                     'Level (std.)': t.z_level.map(lambda v: f"{v:+.2f}").values, 'Uplift (std.)': t.z_uplift.map(lambda v: f"{v:+.2f}").values, 'Consistency (std.)': t.z_cons.map(lambda v: f"{v:+.2f}").values,
                     'Rating': t.score.map(lambda v: f"{v:.2f}").values, 'Rank range': [f"{a:.0f}-{b:.0f}" for a, b in zip(t.rank_lo, t.rank_hi)]}), widths=[0.8, 4.2, 1.6, 1.5, 1.6, 1.4, 1.4, 1.7, 1.3, 1.6], size=8)
+
+# ============ Appendix C: one player end to end
+doc.add_heading("Appendix C. One player from raw balls to final rating", 1)
+WK = json.load(open(f"{OUT}/walkthrough_summary.json"))
+_sm = WK['score_models']
+P("Sunil Narine, first among bowlers, traced through every step. Rates are win-probability points per 100 balls of average stakes.")
+T(pd.DataFrame({'Step': [str(i) for i in range(1, 13)],
+                'What happens': ['Balls bowled in the analysed matches', 'Pressure balls: the top quarter of all balls by stakes', 'Win probability saved on pressure balls, as it happened',
+                                 'Compared with the average bowler on the same kind of ball, and adjusted for the batters faced', 'Pressure Exam mark for the same balls', 'Ball value: half actual (step 4), half exam (step 5)',
+                                 'Usual level on ordinary balls; uplift is the gap between steps 6 and 7', 'Shrinkage: overall level pulled towards the average; uplift shrunk hard', 'Level: overall level plus the part of the uplift it does not already contain',
+                                 'Consistency: pressure balls not lost, against the average for the same kind of ball', 'Standardised scores, combined as 0.38 x Level + 0.62 x Consistency', 'Averaged over the three win-probability models, with its uncertainty'],
+                'Sunil Narine': [f"{WK['balls']:,} balls in {WK['matches']} matches", f"{WK['press_balls']} in {WK['press_matches']} matches; economy {WK['econ_P']:.2f} against {WK['econ_N']:.2f} otherwise; {WK['wkts_P']} wickets",
+                                 f"{WK['raw_wpa_P']:+.1f}", f"{WK['actual_P']:+.1f}", f"{WK['exam_P']:+.1f}", f"{WK['blend_P']:+.1f}", f"{WK['blend_N']:+.1f}; uplift {WK['uplift_raw']:+.1f}",
+                                 f"overall {WK['base_eb']:+.1f}; uplift {WK['uplift_raw']:+.1f} to {WK['uplift_eb']:+.1f}", f"{WK['level_eb']:+.1f}", f"{WK['cons']:+.1f} points",
+                                 f"Level {WK['z_level']:+.2f}, Consistency {WK['z_cons']:+.2f}; rating {WK['score_main']:.2f} (main model)",
+                                 f"{_sm['Main (blend)']:.2f}, {_sm['Logistic only']:.2f} and {_sm['Boosted trees only']:.2f}: final {WK['score_c']:.2f}, rank {WK['rank_c']}; 90% interval {WK['lo']:.2f} to {WK['hi']:.2f}; top 10 in {pc(WK['p_top10'])} of resamples ({WK['tier'].lower()})"]}),
+  widths=[0.8, 8.2, 8.0], size=8)
+P("Three things stand out. Comparing Narine with the average bowler on the same kind of ball nearly doubles the raw figure, because the average bowler loses win probability on pressure balls. Shrinkage keeps almost all of Narine's overall level, which rests on more than a thousand balls, but only a small part of the apparent rise under pressure, which the data cannot tell from luck. And all three win-probability models put Narine first, which is why the place is firm. Every number here is reproduced by analysis/29_charts.py in the repository.")
+
+# ============ Appendix D: questions a judge might ask
+doc.add_heading("Appendix D. Questions a judge might ask", 1).paragraph_format.page_break_before = True
+_ck = S['checks']; _lfb, _lfw = LF['bat'], LF['bowl']
+_faq = [
+ ("Why leverage, rather than the last few overs?", f"The last overs include dead finishes and miss collapses early in a chase: {pc(S['composition']['inn2_PP'])} of our pressure balls come in the chase powerplay. Leverage picks out the balls that can change the result in any over, and pressure balls carry three times the stakes of ordinary ones."),
+ ("Why win probability instead of runs?", "A run is worth different amounts in different situations: a dot ball when 14 an over is needed costs far more than one at 4 an over, and a wicket has to be priced against runs. Win probability puts runs, dots and wickets on one scale."),
+ ("Why is the Pressure Exam needed?", "Two batters with identical shots can end with very different totals because one six landed on a ball worth 4 points and the other on one worth 12. The exam marks each outcome at its average worth in that kind of situation, removing that timing luck."),
+ ("Why blend the exam 50/50 with actual impact?", "The exam ignores finer differences in match state, and the brief asks who delivered in real matches. In the held-out tests the blend beat both the previous version and the exam alone on predicting bowlers (A.1)."),
+ ("Why empirical-Bayes shrinkage?", f"A pressure record from 150 to 800 balls is noisy. A player's own raw record predicts unseen matches at {S['bat_rel']['pred_rawP_to_rawP']:.2f} for batters; the shrunk Level at {S['bat_rel']['pred_level_to_rawP']:.2f}."),
+ ("Why do batting and bowling weights differ?", "We fitted them to predict actual pressure value in unseen matches, separately for each list. For bowlers, how rarely they lose a pressure ball predicts better than their average level, so Consistency carries 62% of the bowling weight."),
+ ("Why does uplift get no separate weight?", f"Uplift (pressure minus usual) barely repeats between halves of the matches, and the shuffle test finds no clutch skill (p = {_ck['bat_perm']['p_spread']:.2f} and {_ck['bowl_perm']['p_spread']:.2f}). Given a free choice, the fitted weights gave it zero. It still enters through Level, as far as the evidence allows."),
+ ("Why does the rating not beat strike rate for batters?", f"Because batting under pressure is mostly general scoring ability carrying over. In the leakage-free paired test the batting rating and strike rate cannot be told apart ({_lfb['diff']['overall SR/econ']['mean']:+.2f}). The rating adds dismissals, match situation, opposition and uncertainty, which strike rate ignores. For bowlers the rating predicts better than economy rate in {pc(_lfw['diff']['overall SR/econ']['share_rating_ahead'])} of leakage-free splits."),
+ ("Why trust a ranking with moderate reliability?", f"Because we show exactly how far to trust each place. A full-sample reliability of about {sb(_lfb['mean']['repeatable']):.1f} to {sb(S['bowl_rel']['score']):.1f} is what this much data supports; firm places hold under all three models and most resamples, and contested places are flagged with the players who could replace them."),
+ ("What would ball-tracking data add?", "Process measures such as false-shot rate, expected wickets and length accuracy settle faster than outcomes and would separate skill from luck more cleanly. The pack has only shot and delivery types."),
+ ("What happens to a player with few pressure balls?", "Under 150 pressure balls, a player is not rated. Above that, shrinkage pulls a short record towards the average, so a 150-ball player needs a much stronger record than a 600-ball player to rank level. Promising players below the bar are named in 7.1."),
+ ("How would Rajasthan Royals use this in a selection meeting?", "Shortlist by rating, check role fit on splits with at least 100 pressure balls, check the evidence tier and interval, and settle close calls with the head-to-head odds (Section 8)."),
+]
+for _q, _a in _faq:
+    P(f"**{_q}**", size=10).paragraph_format.space_after = Pt(1)
+    P(_a, size=9.5)
 
 _last = doc.paragraphs[-1]
 if not _last.text.strip():                 # the spacer after the final table would spill onto a blank page

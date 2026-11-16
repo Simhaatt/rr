@@ -24,7 +24,9 @@ pip install -r requirements.txt
 python run_all.py
 ```
 
-The full run takes about an hour on a four-core machine. `python run_all.py --quick` skips the eleven robustness re-runs and the held-out season and competition test, and takes about 25 minutes. Random seeds are fixed, so the run reproduces every number in the report.
+The full run takes about an hour and a half on a four-core machine. `python run_all.py --quick` runs only the five re-runs the report needs (not all eleven) and 10 leakage-free splits instead of 100, and takes about 35 minutes; the robustness table and leakage figures in the report will then differ slightly. Random seeds are fixed, so the run reproduces every number in the report.
+
+`run_all.py` ends by running `tests/test_outputs.py`, which checks the match counts, the rebuilt results of all 794 decided matches, legal balls per over, wickets per innings, the pressure threshold, eligibility, and that the two lists agree across the CSVs, the submission sheet and the report. It writes `output/verification.json` with the dataset counts, pressure balls, eligible players, model metrics, final lists, random seeds and package versions. Run it alone with `python tests/test_outputs.py` (or `pytest tests/`).
 
 Outputs: `output/`, `output_alt/` and `output_gbm/` (one folder per win-probability model), and `submission/` (report `.docx`, the two lists and the rating CSVs). The PDF was exported from the `.docx` with Microsoft Word.
 
@@ -40,6 +42,9 @@ Two slow design searches are supplied as results in `static/`, not recomputed by
 | `20_consensus.py`, `22_contest.py` | Average of the three models, firm and contested places, head-to-head odds |
 | `25_intervals.py` | 90% intervals for each rating and for the gap between neighbours |
 | `24_external.py` | Held-out tests: built on 2022-2025 and scored on 2026, built on IPL and scored on internationals, and the reverse |
+| `27_leakfree.py` | Leakage-free split-half test: every step, including the opponent adjustment and exam marks, refitted on each half alone; paired comparison with strike rate and economy |
+| `28_decision.py` | Decision support from existing results: role fit, two illustrative player choices, Rajasthan Royals' 2026 squad, three worked deliveries |
+| `29_charts.py` | Method flowchart, rating-versus-reliability chart, and one player (Sunil Narine) traced from raw balls to final rating |
 | `11`, `14`-`19`, `21` | Checks: squeeze, knockouts, home and away, all-round, clutch tests, recency, calibration, model agreement |
 | `05b`, `05c`, `08`-`10`, `12`, `13`, `23` | Design searches and rejected ideas (see the report's Appendix A) |
 | `01`-`03`, `04b`, `04c` | Early data profiling and model comparisons |
